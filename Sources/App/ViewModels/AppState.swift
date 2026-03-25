@@ -176,173 +176,69 @@ final class AppState: ObservableObject {
 
     private func handleBridgeRequest(_ request: BridgeEnvelope) -> BridgeResponseEnvelope {
         switch request.type {
-        case .ping:
-            return BridgeResponseEnvelope(
-                id: request.id,
-                ok: true,
-                code: nil,
-                message: "App bridge is reachable.",
-                data: BridgeResponseData(
-                    appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                    recognizedProvider: nil,
-                    unlockState: unlockManager.unlockState,
-                    savedItemID: nil,
-                    savedUsageLogID: nil,
-                    savedPlatforms: savedPlatforms()
-                )
-            )
-
-        case .requestStatus:
-            return BridgeResponseEnvelope(
-                id: request.id,
-                ok: true,
-                code: nil,
-                message: nil,
-                data: BridgeResponseData(
-                    appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                    recognizedProvider: nil,
-                    unlockState: unlockManager.unlockState,
-                    savedItemID: nil,
-                    savedUsageLogID: nil,
-                    savedPlatforms: savedPlatforms()
-                )
-            )
+        case .ping, .requestStatus:
+            return successResponse(id: request.id)
 
         case .openApp:
             activateApp()
-            return BridgeResponseEnvelope(
-                id: request.id,
-                ok: true,
-                code: nil,
-                message: "Dashboard is open.",
-                data: BridgeResponseData(
-                    appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                    recognizedProvider: nil,
-                    unlockState: unlockManager.unlockState,
-                    savedItemID: nil,
-                    savedUsageLogID: nil,
-                    savedPlatforms: savedPlatforms()
-                )
-            )
+            return successResponse(id: request.id, message: "Dashboard is open.")
 
         case .lockVault:
             lockVault()
-            return BridgeResponseEnvelope(
-                id: request.id,
-                ok: true,
-                code: nil,
-                message: "Vault locked.",
-                data: BridgeResponseData(
-                    appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                    recognizedProvider: nil,
-                    unlockState: unlockManager.unlockState,
-                    savedItemID: nil,
-                    savedUsageLogID: nil,
-                    savedPlatforms: savedPlatforms()
-                )
-            )
+            return successResponse(id: request.id, message: "Vault locked.")
 
         case .saveDraft:
             guard let draft = request.payload?.draft else {
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: false,
-                    code: .validationError,
-                    message: "Save request is missing its draft payload.",
-                    data: nil
-                )
+                return errorResponse(id: request.id, code: .validationError, message: "Save request is missing its draft payload.")
             }
 
             do {
                 let record = try vaultService.saveDraft(draft)
                 showTransientMessage("Saved \(record.providerDisplayName) key from Safari.")
                 activateApp()
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: true,
-                    code: nil,
-                    message: "Saved \(record.providerDisplayName) key.",
-                    data: BridgeResponseData(
-                        appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                        recognizedProvider: nil,
-                        unlockState: unlockManager.unlockState,
-                        savedItemID: record.id.uuidString,
-                        savedUsageLogID: nil,
-                        savedPlatforms: savedPlatforms()
-                    )
-                )
+                return successResponse(id: request.id, message: "Saved \(record.providerDisplayName) key.", savedItemID: record.id.uuidString)
             } catch let error as VaultError {
-                let code: BridgeErrorCode = switch error {
-                case .locked:
-                    .vaultLocked
-                case .validation, .duplicate:
-                    .validationError
-                case .notFound:
-                    .notFound
-                }
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: false,
-                    code: code,
-                    message: error.localizedDescription,
-                    data: nil
-                )
+                return errorResponse(id: request.id, code: error.bridgeErrorCode, message: error.localizedDescription)
             } catch {
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: false,
-                    code: .internalError,
-                    message: error.localizedDescription,
-                    data: nil
-                )
+                return errorResponse(id: request.id, code: .internalError, message: error.localizedDescription)
             }
 
         case .saveUsageLog:
             guard let draft = request.payload?.usageLogDraft else {
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: false,
-                    code: .validationError,
-                    message: "Usage log request is missing its payload.",
-                    data: nil
-                )
+                return errorResponse(id: request.id, code: .validationError, message: "Usage log request is missing its payload.")
             }
 
             do {
                 let record = try vaultService.saveUsageLog(draft)
                 showTransientMessage("Logged usage for \(record.sourceProviderDisplayName).")
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: true,
-                    code: nil,
-                    message: "Logged usage for \(record.sourceProviderDisplayName).",
-                    data: BridgeResponseData(
-                        appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-                        recognizedProvider: nil,
-                        unlockState: unlockManager.unlockState,
-                        savedItemID: nil,
-                        savedUsageLogID: record.id.uuidString,
-                        savedPlatforms: savedPlatforms()
-                    )
-                )
+                return successResponse(id: request.id, message: "Logged usage for \(record.sourceProviderDisplayName).", savedUsageLogID: record.id.uuidString)
             } catch let error as VaultError {
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: false,
-                    code: .validationError,
-                    message: error.localizedDescription,
-                    data: nil
-                )
+                return errorResponse(id: request.id, code: .validationError, message: error.localizedDescription)
             } catch {
-                return BridgeResponseEnvelope(
-                    id: request.id,
-                    ok: false,
-                    code: .internalError,
-                    message: error.localizedDescription,
-                    data: nil
-                )
+                return errorResponse(id: request.id, code: .internalError, message: error.localizedDescription)
             }
         }
+    }
+
+    private func successResponse(id: String, message: String? = nil, savedItemID: String? = nil, savedUsageLogID: String? = nil) -> BridgeResponseEnvelope {
+        BridgeResponseEnvelope(
+            id: id,
+            ok: true,
+            code: nil,
+            message: message,
+            data: BridgeResponseData(
+                appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+                recognizedProvider: nil,
+                unlockState: unlockManager.unlockState,
+                savedItemID: savedItemID,
+                savedUsageLogID: savedUsageLogID,
+                savedPlatforms: savedPlatforms()
+            )
+        )
+    }
+
+    private func errorResponse(id: String, code: BridgeErrorCode, message: String) -> BridgeResponseEnvelope {
+        BridgeResponseEnvelope(id: id, ok: false, code: code, message: message, data: nil)
     }
 
     private func showTransientMessage(_ message: String) {

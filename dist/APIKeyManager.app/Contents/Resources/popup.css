@@ -1,120 +1,136 @@
 :root {
-  color-scheme: dark;
-  --bg: rgba(31, 26, 26, 0.92);
-  --panel: rgba(255, 255, 255, 0.05);
-  --panel-strong: rgba(255, 255, 255, 0.08);
-  --field: rgba(255, 255, 255, 0.04);
-  --ink: #f5f3f1;
-  --muted: rgba(245, 243, 241, 0.68);
-  --line: rgba(255, 255, 255, 0.14);
-  --line-strong: rgba(255, 255, 255, 0.22);
-  --accent: #7eb6ff;
-  --accent-fill: rgba(126, 182, 255, 0.18);
-  --warn: #ff9a8b;
-  --ok: #a3e6b0;
+  color-scheme: light dark;
+  --bg: rgba(245, 243, 241, 0.30);
+  --ink: #1a1a1a;
+  --muted: rgba(60, 60, 67, 0.6);
+  --separator: rgba(0, 0, 0, 0.1);
+  --accent: #007aff;
+  --warn: #ff3b30;
+  --ok: #34c759;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: rgba(40, 38, 38, 0.30);
+    --ink: #f0edeb;
+    --muted: rgba(235, 235, 245, 0.6);
+    --separator: rgba(255, 255, 255, 0.1);
+    --accent: #5a9aff;
+    --warn: #ff6b5a;
+    --ok: #5ed47a;
+  }
 }
 
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  margin: 0;
-  min-width: 440px;
+  min-width: 380px;
   background: transparent;
   color: var(--ink);
-  font: 13px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .shell {
-  padding: 10px;
+  padding: 6px;
 }
 
 .popover {
-  padding: 18px;
-  border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
-    var(--bg);
-  border: 1px solid var(--line-strong);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(24px);
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--bg);
+  backdrop-filter: blur(50px) saturate(1.8);
+  -webkit-backdrop-filter: blur(50px) saturate(1.8);
+  border: 0.5px solid var(--separator);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.12),
+    0 12px 40px rgba(0, 0, 0, 0.2);
 }
+
+/* ── Header ── */
 
 .summary {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid var(--separator);
 }
 
 .siteBadge {
-  width: 52px;
-  height: 52px;
-  border-radius: 18px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #0d120d;
   background: linear-gradient(180deg, #b8d4ff 0%, #41e758 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
 }
 
 .summaryCopy h1 {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.2;
-  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: 600;
 }
 
 .summaryCopy p {
-  margin: 4px 0 0;
+  margin-top: 1px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
+
+/* ── Tabs (segmented control) ── */
 
 .tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin: 14px 0 12px;
-  padding: 4px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--line);
-}
-
-.tab,
-.miniButton,
-button {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  color: var(--ink);
-  cursor: pointer;
-  font: inherit;
+  margin: 10px 0;
+  padding: 2px;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.08);
 }
 
 .tab {
-  padding: 9px 12px;
-  font-weight: 600;
-  border-color: transparent;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
 
 .tab.active {
-  background: var(--panel-strong);
-  border-color: var(--line-strong);
+  background: rgba(128, 128, 128, 0.18);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: 0 0.5px 2px rgba(0, 0, 0, 0.1);
 }
 
+.tab:hover:not(.active) {
+  color: var(--ink);
+}
+
+/* ── Status ── */
+
 .status {
-  margin-bottom: 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
+  margin-bottom: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.06);
   color: var(--muted);
+  font-size: 12px;
 }
 
 .status.error {
@@ -124,6 +140,8 @@ button {
 .status.success {
   color: var(--ok);
 }
+
+/* ── Panels ── */
 
 .hidden {
   display: none !important;
@@ -137,20 +155,22 @@ button {
   display: block;
 }
 
+/* ── Forms ── */
+
 .form {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 label {
   display: grid;
-  gap: 6px;
+  gap: 3px;
 }
 
 label span,
 .sectionHeader span {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--muted);
 }
 
@@ -158,114 +178,169 @@ input,
 textarea,
 select {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--field);
+  padding: 7px 9px;
+  border: none;
+  border-bottom: 0.5px solid var(--separator);
+  border-radius: 0;
+  background: transparent;
   color: var(--ink);
   font: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-bottom-color: var(--accent);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: rgba(245, 243, 241, 0.36);
+  color: var(--muted);
+  opacity: 0.5;
 }
 
 input[readonly] {
-  color: rgba(245, 243, 241, 0.56);
+  color: var(--muted);
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='currentColor' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
 }
 
 textarea {
   resize: vertical;
+  min-height: 48px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
+
+/* ── Section headers ── */
 
 .sectionHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding-top: 4px;
+  padding-top: 6px;
+  border-top: 0.5px solid var(--separator);
 }
+
+/* ── Row cards ── */
 
 .stack {
   display: grid;
-  gap: 12px;
+  gap: 0;
 }
 
 .rowCard {
   display: grid;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.rowCard:last-child {
+  border-bottom: none;
 }
 
 .rowCardHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
 }
 
 .rowLabel {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   color: var(--muted);
 }
 
 .rowCardGrid {
   display: grid;
-  gap: 12px;
+  gap: 8px;
 }
 
+/* ── Buttons ── */
+
 .miniButton {
-  min-width: 34px;
-  padding: 6px 10px;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.06);
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: rgba(128, 128, 128, 0.12);
+  color: var(--muted);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
 }
+
+.miniButton:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.22);
+  color: var(--ink);
+}
+
+/* ── Actions ── */
 
 .actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding-top: 4px;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 0.5px solid var(--separator);
 }
 
 .helper {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 button.primary,
 button.secondary {
-  padding: 9px 14px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
 button.primary {
-  background: var(--accent-fill);
-  border-color: rgba(126, 182, 255, 0.36);
-  color: #f5f9ff;
+  background: var(--accent);
+  color: #fff;
+}
+
+button.primary:hover:not(:disabled) {
+  filter: brightness(1.1);
 }
 
 button.secondary {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(128, 128, 128, 0.12);
+  color: var(--ink);
 }
 
-button:hover:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.24);
+button.secondary:hover:not(:disabled) {
+  background: rgba(128, 128, 128, 0.22);
 }
 
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: default;
 }

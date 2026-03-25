@@ -1,7 +1,8 @@
 const state = {
   activeTab: {
     title: "",
-    url: ""
+    url: "",
+    siteName: ""
   },
   bridgeMode: "unknown",
   savedPlatforms: [],
@@ -76,8 +77,11 @@ async function initialize() {
   refs.siteTitle.textContent = host || "API Key Manager";
   refs.siteSubtitle.textContent = state.activeTab.title || "Manual key and usage logger";
 
+  state.activeTab.siteName = extractSiteName(state.activeTab.url);
+
   refs.currentURLInput.value = state.activeTab.url;
   refs.pageTitleInput.placeholder = state.activeTab.title || "Example: Anthropic";
+  refs.platformURLInput.placeholder = state.activeTab.url || "Example: https://api.anthropic.com";
 
   syncKeyEnvironmentVisibility();
 
@@ -126,6 +130,24 @@ function extractHost(urlString) {
   } catch {
     return "";
   }
+}
+
+function extractSiteName(urlString) {
+  try {
+    const host = new URL(urlString).hostname;
+    const parts = host.replace(/^www\./, "").split(".");
+    return parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  } catch {
+    return "";
+  }
+}
+
+function deriveKeyName(siteName) {
+  if (!siteName) {
+    return "API_KEY";
+  }
+
+  return siteName.toUpperCase().replace(/[^A-Z0-9]/g, "_") + "_API_KEY";
 }
 
 function syncKeyEnvironmentVisibility() {
@@ -185,6 +207,7 @@ function appendOption(select, value, label) {
 
 function addKeyRow() {
   state.keyRowCount += 1;
+  const defaultKeyName = deriveKeyName(state.activeTab.siteName);
   const row = document.createElement("div");
   row.className = "rowCard";
   row.dataset.rowType = "key";
@@ -196,7 +219,7 @@ function addKeyRow() {
     <div class="rowCardGrid">
       <label>
         <span>Key Name</span>
-        <input class="keyNameInput" type="text" placeholder="Example: ANTHROPIC_API_KEY">
+        <input class="keyNameInput" type="text" placeholder="${defaultKeyName}">
       </label>
       <label>
         <span>Value</span>
@@ -282,32 +305,24 @@ async function submitKeys(event) {
   event.preventDefault();
   refs.saveKeysButton.disabled = true;
 
-  const pageTitle = refs.pageTitleInput.value.trim();
-  if (!pageTitle) {
-    setStatus("Page title is required.", "error");
-    refs.saveKeysButton.disabled = false;
-    return;
-  }
+  const pageTitle = refs.pageTitleInput.value.trim() || state.activeTab.title || titleCase(state.activeTab.siteName) || "Untitled";
 
   const environment = refs.environmentSelect.value === "custom"
-    ? refs.customEnvironmentInput.value.trim()
+    ? (refs.customEnvironmentInput.value.trim() || "production")
     : refs.environmentSelect.value;
 
-  if (!environment) {
-    setStatus("Environment is required.", "error");
-    refs.saveKeysButton.disabled = false;
-    return;
-  }
+  const platformURL = refs.platformURLInput.value.trim() || state.activeTab.url;
+  const defaultKeyName = deriveKeyName(state.activeTab.siteName);
 
   const keyRows = Array.from(refs.keyRows.querySelectorAll(".rowCard"));
   const drafts = [];
 
   for (const row of keyRows) {
-    const keyName = row.querySelector(".keyNameInput").value.trim();
+    const keyName = row.querySelector(".keyNameInput").value.trim() || defaultKeyName;
     const apiKey = row.querySelector(".keyValueInput").value.trim();
 
-    if (!keyName || !apiKey) {
-      setStatus("Every key row needs both a key name and a value.", "error");
+    if (!apiKey) {
+      setStatus("Key value is required.", "error");
       refs.saveKeysButton.disabled = false;
       return;
     }
@@ -317,7 +332,7 @@ async function submitKeys(event) {
       providerDisplayName: pageTitle,
       keyName,
       apiKey,
-      platformURL: refs.platformURLInput.value.trim(),
+      platformURL,
       sourceURL: refs.currentURLInput.value,
       pageTitle,
       notes: refs.keyNotesInput.value,
@@ -495,7 +510,7 @@ async function sendBridgeMessage(message) {
 async function sendLocalhostBridge(message, nativeError) {
   state.bridgeMode = "localhost";
 
-  const response = await fetch("http://127.0.0.1:38173/bridge", {
+  const response = await fetch("http://localhost:38173/bridge", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"

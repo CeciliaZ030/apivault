@@ -10,7 +10,7 @@
 		</data>
 		<key>Resources/popup.css</key>
 		<data>
-		qeVuOWtClBTZ35QKUSokEe1KRZk=
+		ta/HfDqbLSlpljb9p14UxECufrI=
 		</data>
 		<key>Resources/popup.html</key>
 		<data>
@@ -18,7 +18,7 @@
 		</data>
 		<key>Resources/popup.js</key>
 		<data>
-		e9yJNilOecFDyDTXAkmCT/Zx4yM=
+		ZQdVSbudnUgGwVC7e75FXu/JJks=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -27,10 +27,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			BsV9cnWCQLQ2o0ns/lQzbKeHMKU=
+			8hw2apnceYfRr/SQNIQTZo7X7hY=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"06c57d72758240b436a349ecfe54336ca78730a5"</string>
+			<string>cdhash H"f21c366a99dc7987d1aff490348413668ed7ee16"</string>
 		</dict>
 		<key>MacOS/__preview.dylib</key>
 		<dict>
@@ -61,7 +61,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			H69b+bMl0/yG/rcKFQSL48rpcCf9ciDTMgU8pIwPKvY=
+			iqQHbHGyhZ2CfByjvcBsP/t+8pmoXNs89046rp2kOiA=
 			</data>
 		</dict>
 		<key>Resources/popup.html</key>
@@ -75,7 +75,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			KDG0JOkd+nWMWuTN9zrNEFCu7so8vJm08hgRXbJyz1c=
+			RBEXUlwJhS6aRjim5/e/dYaCTzQR+Vu3cyzibeALjss=
 			</data>
 		</dict>
 	</dict>

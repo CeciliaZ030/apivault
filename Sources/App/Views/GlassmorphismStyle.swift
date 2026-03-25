@@ -51,21 +51,7 @@ extension View {
             )
     }
 
-    func glassChip(selected: Bool = false) -> some View {
-        self
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(.thinMaterial)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(selected ? Color.white.opacity(0.08) : Color.black.opacity(0.12))
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .strokeBorder(.white.opacity(selected ? 0.22 : 0.14), lineWidth: 1)
-            )
-    }
+
 }
 
 struct DashboardActionButtonStyle: ButtonStyle {
@@ -119,62 +105,6 @@ struct DashboardActionButtonStyle: ButtonStyle {
     }
 }
 
-struct StatusPill: View {
-    let text: String
-    var tint: Color = .white
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 10, weight: .medium))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(tint.opacity(0.16))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
-            )
-    }
-}
-
-struct ProviderAvatar: View {
-    let name: String
-
-    private var initials: String {
-        let parts = name.split(separator: " ")
-        let letters = parts.prefix(2).compactMap { $0.first }
-        if !letters.isEmpty {
-            return String(letters)
-        }
-        return String(name.prefix(2))
-    }
-
-    private var gradient: LinearGradient {
-        let palette: [(Color, Color)] = [
-            (.green, .mint),
-            (.cyan, .blue),
-            (.pink, .orange),
-            (.teal, .cyan),
-            (.indigo, .purple)
-        ]
-        let pair = palette[abs(name.hashValue) % palette.count]
-        return LinearGradient(colors: [pair.0, pair.1], startPoint: .topLeading, endPoint: .bottomTrailing)
-    }
-
-    var body: some View {
-        Circle()
-            .fill(gradient)
-            .frame(width: 40, height: 40)
-            .overlay(
-                Text(initials.uppercased())
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-            )
-    }
-}
-
 struct GlassField<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
@@ -190,37 +120,3 @@ struct GlassField<Content: View>: View {
     }
 }
 
-struct MetadataLine: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Text(title)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: 92, alignment: .leading)
-
-            Text(value)
-                .font(.system(size: 13))
-                .textSelection(.enabled)
-
-            Spacer(minLength: 0)
-        }
-    }
-}
-
-struct SectionCard<Content: View>: View {
-    let title: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text(title)
-                .font(.system(size: 14, weight: .semibold))
-            content
-        }
-        .padding(18)
-        .glassPanel(cornerRadius: 24, tintOpacity: 0.06)
-    }
-}

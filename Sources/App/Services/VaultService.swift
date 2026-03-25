@@ -19,6 +19,14 @@ enum VaultError: LocalizedError {
             return "The selected key could not be found."
         }
     }
+
+    var bridgeErrorCode: BridgeErrorCode {
+        switch self {
+        case .locked: .vaultLocked
+        case .validation, .duplicate: .validationError
+        case .notFound: .notFound
+        }
+    }
 }
 
 struct MetadataExportRecord: Codable {
