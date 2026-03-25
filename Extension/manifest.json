@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "API Key Manager",
+  "description": "Save API keys from Safari into your local dashboard.",
+  "version": "0.1.0",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "nativeMessaging"
+  ],
+  "action": {
+    "default_title": "API Key Manager",
+    "default_popup": "popup.html"
+  }
+}
+

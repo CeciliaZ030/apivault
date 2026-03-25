@@ -1,0 +1,74 @@
+name: APIKeyManager
+options:
+  minimumXcodeGenVersion: 2.44.0
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "14.0"
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+targets:
+  APIKeyManagerApp:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/App
+      - path: Extension
+        buildPhase: resources
+    info:
+      path: Config/App-Info.plist
+      properties:
+        CFBundleDisplayName: API Key Manager
+        LSApplicationCategoryType: public.app-category.developer-tools
+        SFSafariWebExtensionConverterVersion: "26.3"
+    dependencies:
+      - target: APIKeyManagerExtension
+        embed: true
+        codeSign: true
+        copy:
+          destination: plugins
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cecilia.APIKeyManager
+        PRODUCT_NAME: APIKeyManager
+        INFOPLIST_FILE: Config/App-Info.plist
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        APPLICATION_EXTENSION_API_ONLY: NO
+    scheme:
+      gatherCoverageData: false
+  APIKeyManagerExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/Shared
+      - path: Sources/Extension
+    info:
+      path: Config/Extension-Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.web-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cecilia.APIKeyManager.Extension
+        PRODUCT_NAME: APIKeyManager Extension
+        INFOPLIST_FILE: Config/Extension-Info.plist
+        CODE_SIGN_STYLE: Automatic
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+schemes:
+  APIKeyManager:
+    build:
+      targets:
+        APIKeyManagerApp: all
+        APIKeyManagerExtension: all
+    run:
+      config: Debug
+      executable: APIKeyManagerApp

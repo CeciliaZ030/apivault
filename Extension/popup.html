@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API Key Manager</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <section class="popover">
+      <header class="summary">
+        <div class="siteBadge">AK</div>
+        <div class="summaryCopy">
+          <h1 id="siteTitle">API Key Manager</h1>
+          <p id="siteSubtitle">Manual key and usage logger</p>
+        </div>
+      </header>
+
+      <section class="tabs" role="tablist" aria-label="Logger tabs">
+        <button id="logKeyTab" type="button" class="tab active" data-tab="key" aria-selected="true">Log Key</button>
+        <button id="logUsageTab" type="button" class="tab" data-tab="usage" aria-selected="false">Log Usage</button>
+      </section>
+
+      <section id="statusBanner" class="status"></section>
+
+      <section id="keyPanel" class="panel active">
+        <form id="keyForm" class="form">
+          <label>
+            <span>Page Title</span>
+            <input id="pageTitleInput" type="text" placeholder="Example: Anthropic">
+          </label>
+
+          <label>
+            <span>Platform Link</span>
+            <input id="platformURLInput" type="text" placeholder="Example: https://api.anthropic.com">
+          </label>
+
+          <label>
+            <span>Current Link</span>
+            <input id="currentURLInput" type="text" readonly>
+          </label>
+
+          <div class="grid">
+            <label>
+              <span>Environment</span>
+              <select id="environmentSelect">
+                <option value="production">Production</option>
+                <option value="staging">Staging</option>
+                <option value="development">Development</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+
+            <label id="customEnvironmentRow" class="hidden">
+              <span>Custom Environment</span>
+              <input id="customEnvironmentInput" type="text" placeholder="Example: sandbox">
+            </label>
+          </div>
+
+          <div class="sectionHeader">
+            <span>Keys</span>
+            <button id="addKeyRowButton" type="button" class="miniButton">+</button>
+          </div>
+          <div id="keyRows" class="stack"></div>
+
+          <label>
+            <span>Notes</span>
+            <textarea id="keyNotesInput" rows="3" placeholder="Optional notes"></textarea>
+          </label>
+
+          <div class="actions">
+            <button id="openAppButton" type="button" class="secondary">Open Dashboard</button>
+            <button id="saveKeysButton" type="submit" class="primary">Save Keys</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="usagePanel" class="panel">
+        <form id="usageForm" class="form">
+          <div class="grid">
+            <label>
+              <span>Source Platform</span>
+              <select id="usagePlatformSelect"></select>
+            </label>
+
+            <label id="customUsagePlatformRow" class="hidden">
+              <span>Custom Platform</span>
+              <input id="customUsagePlatformInput" type="text" placeholder="Example: Anthropic">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              <span>Source Environment</span>
+              <select id="usageEnvironmentSelect"></select>
+            </label>
+
+            <label id="customUsageEnvironmentRow" class="hidden">
+              <span>Custom Environment</span>
+              <input id="customUsageEnvironmentInput" type="text" placeholder="Example: sandbox">
+            </label>
+          </div>
+
+          <div class="sectionHeader">
+            <span>Usage Entries</span>
+            <button id="addUsageRowButton" type="button" class="miniButton">+</button>
+          </div>
+          <div id="usageRows" class="stack"></div>
+
+          <label>
+            <span>Notes</span>
+            <textarea id="usageNotesInput" rows="3" placeholder="Optional notes"></textarea>
+          </label>
+
+          <div class="actions">
+            <span class="helper">Current page is attached automatically.</span>
+            <button id="saveUsageButton" type="submit" class="primary">Log Usage</button>
+          </div>
+        </form>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
