@@ -39,6 +39,7 @@ function cacheRefs() {
   refs.customEnvironmentInput = document.getElementById("customEnvironmentInput");
   refs.keyRows = document.getElementById("keyRows");
   refs.keyNotesInput = document.getElementById("keyNotesInput");
+  refs.removeKeyRowButton = document.getElementById("removeKeyRowButton");
   refs.addKeyRowButton = document.getElementById("addKeyRowButton");
   refs.openAppButton = document.getElementById("openAppButton");
   refs.saveKeysButton = document.getElementById("saveKeysButton");
@@ -51,6 +52,7 @@ function cacheRefs() {
   refs.customUsageEnvironmentInput = document.getElementById("customUsageEnvironmentInput");
   refs.usageRows = document.getElementById("usageRows");
   refs.usageNotesInput = document.getElementById("usageNotesInput");
+  refs.removeUsageRowButton = document.getElementById("removeUsageRowButton");
   refs.addUsageRowButton = document.getElementById("addUsageRowButton");
   refs.saveUsageButton = document.getElementById("saveUsageButton");
 }
@@ -59,11 +61,13 @@ function bindEvents() {
   refs.logKeyTab.addEventListener("click", () => switchTab("key"));
   refs.logUsageTab.addEventListener("click", () => switchTab("usage"));
   refs.environmentSelect.addEventListener("change", syncKeyEnvironmentVisibility);
+  refs.removeKeyRowButton.addEventListener("click", () => removeLastRow(refs.keyRows, addKeyRow));
   refs.addKeyRowButton.addEventListener("click", addKeyRow);
   refs.openAppButton.addEventListener("click", openDashboard);
   refs.keyForm.addEventListener("submit", submitKeys);
   refs.usagePlatformSelect.addEventListener("change", syncUsagePlatformState);
   refs.usageEnvironmentSelect.addEventListener("change", syncUsageEnvironmentVisibility);
+  refs.removeUsageRowButton.addEventListener("click", () => removeLastRow(refs.usageRows, addUsageRow));
   refs.addUsageRowButton.addEventListener("click", addUsageRow);
   refs.usageForm.addEventListener("submit", submitUsage);
 }
@@ -206,16 +210,11 @@ function appendOption(select, value, label) {
 }
 
 function addKeyRow() {
-  state.keyRowCount += 1;
   const defaultKeyName = deriveKeyName(state.activeTab.siteName);
   const row = document.createElement("div");
   row.className = "rowCard";
   row.dataset.rowType = "key";
   row.innerHTML = `
-    <div class="rowCardHeader">
-      <span class="rowLabel">Key ${state.keyRowCount}</span>
-      <button type="button" class="miniButton removeRowButton">-</button>
-    </div>
     <div class="rowCardGrid">
       <label>
         <span>Key Name</span>
@@ -228,21 +227,15 @@ function addKeyRow() {
     </div>
   `;
 
-  row.querySelector(".removeRowButton").addEventListener("click", () => removeRow(row, refs.keyRows, addKeyRow));
   refs.keyRows.appendChild(row);
   syncRemoveButtons(refs.keyRows);
 }
 
 function addUsageRow() {
-  state.usageRowCount += 1;
   const row = document.createElement("div");
   row.className = "rowCard";
   row.dataset.rowType = "usage";
   row.innerHTML = `
-    <div class="rowCardHeader">
-      <span class="rowLabel">Usage ${state.usageRowCount}</span>
-      <button type="button" class="miniButton removeRowButton">-</button>
-    </div>
     <div class="rowCardGrid">
       <label>
         <span>Usage</span>
@@ -263,26 +256,31 @@ function addUsageRow() {
     </div>
   `;
 
-  row.querySelector(".removeRowButton").addEventListener("click", () => removeRow(row, refs.usageRows, addUsageRow));
   refs.usageRows.appendChild(row);
   syncRemoveButtons(refs.usageRows);
 }
 
-function removeRow(row, container, addBack) {
-  row.remove();
+function removeLastRow(container, addBack) {
+  const lastRow = container.lastElementChild;
+  if (lastRow) {
+    lastRow.remove();
+  }
+
   if (container.children.length === 0) {
     addBack();
-  } else {
-    syncRemoveButtons(container);
   }
+
+  syncRemoveButtons(container);
 }
 
 function syncRemoveButtons(container) {
-  const buttons = container.querySelectorAll(".removeRowButton");
-  const disable = buttons.length <= 1;
-  buttons.forEach((button) => {
-    button.disabled = disable;
-  });
+  const disable = container.children.length <= 1;
+  if (container === refs.keyRows) {
+    refs.removeKeyRowButton.disabled = disable;
+  }
+  if (container === refs.usageRows) {
+    refs.removeUsageRowButton.disabled = disable;
+  }
 }
 
 async function openDashboard() {

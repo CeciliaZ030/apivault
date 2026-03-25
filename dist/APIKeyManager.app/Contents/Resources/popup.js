@@ -206,16 +206,11 @@ function appendOption(select, value, label) {
 }
 
 function addKeyRow() {
-  state.keyRowCount += 1;
   const defaultKeyName = deriveKeyName(state.activeTab.siteName);
   const row = document.createElement("div");
   row.className = "rowCard";
   row.dataset.rowType = "key";
   row.innerHTML = `
-    <div class="rowCardHeader">
-      <span class="rowLabel">Key ${state.keyRowCount}</span>
-      <button type="button" class="miniButton removeRowButton">-</button>
-    </div>
     <div class="rowCardGrid">
       <label>
         <span>Key Name</span>
@@ -226,6 +221,7 @@ function addKeyRow() {
         <textarea class="keyValueInput" rows="3" placeholder="Paste key value"></textarea>
       </label>
     </div>
+    <button type="button" class="miniButton removeRowButton">-</button>
   `;
 
   row.querySelector(".removeRowButton").addEventListener("click", () => removeRow(row, refs.keyRows, addKeyRow));
@@ -234,15 +230,10 @@ function addKeyRow() {
 }
 
 function addUsageRow() {
-  state.usageRowCount += 1;
   const row = document.createElement("div");
   row.className = "rowCard";
   row.dataset.rowType = "usage";
   row.innerHTML = `
-    <div class="rowCardHeader">
-      <span class="rowLabel">Usage ${state.usageRowCount}</span>
-      <button type="button" class="miniButton removeRowButton">-</button>
-    </div>
     <div class="rowCardGrid">
       <label>
         <span>Usage</span>
@@ -261,6 +252,7 @@ function addUsageRow() {
         <input class="serverIPInput" type="text" placeholder="Optional">
       </label>
     </div>
+    <button type="button" class="miniButton removeRowButton">-</button>
   `;
 
   row.querySelector(".removeRowButton").addEventListener("click", () => removeRow(row, refs.usageRows, addUsageRow));

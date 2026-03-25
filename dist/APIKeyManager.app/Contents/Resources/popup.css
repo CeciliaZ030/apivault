@@ -4,6 +4,7 @@
   --ink: #1a1a1a;
   --muted: rgba(60, 60, 67, 0.6);
   --separator: rgba(0, 0, 0, 0.1);
+  --field-bg: rgba(0, 0, 0, 0.04);
   --accent: #007aff;
   --warn: #ff3b30;
   --ok: #34c759;
@@ -15,6 +16,7 @@
     --ink: #f0edeb;
     --muted: rgba(235, 235, 245, 0.6);
     --separator: rgba(255, 255, 255, 0.1);
+    --field-bg: rgba(255, 255, 255, 0.06);
     --accent: #5a9aff;
     --warn: #ff6b5a;
     --ok: #5ed47a;
@@ -159,17 +161,17 @@ body {
 
 .form {
   display: grid;
-  gap: 10px;
+  gap: 16px;
 }
 
 label {
   display: grid;
-  gap: 3px;
+  gap: 16px;
 }
 
 label span,
 .sectionHeader span {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--muted);
 }
@@ -178,21 +180,20 @@ input,
 textarea,
 select {
   width: 100%;
-  padding: 7px 9px;
+  padding: 8px 10px;
   border: none;
-  border-bottom: 0.5px solid var(--separator);
-  border-radius: 0;
-  background: transparent;
+  border-radius: 6px;
+  background: var(--field-bg);
   color: var(--ink);
   font: inherit;
   outline: none;
-  transition: border-color 0.15s;
+  transition: box-shadow 0.15s;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-  border-bottom-color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent);
 }
 
 input::placeholder,
@@ -221,8 +222,8 @@ textarea {
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  grid-template-columns: 1fr;
+  gap: 14px;
 }
 
 /* ── Section headers ── */
@@ -231,8 +232,13 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 6px;
+  padding-top: 8px;
   border-top: 0.5px solid var(--separator);
+}
+
+.sectionHeader span {
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* ── Row cards ── */
@@ -244,8 +250,8 @@ textarea {
 
 .rowCard {
   display: grid;
-  gap: 8px;
-  padding: 10px 0;
+  gap: 12px;
+  padding: 12px 0;
   border-bottom: 0.5px solid var(--separator);
 }
 
@@ -260,14 +266,14 @@ textarea {
 }
 
 .rowLabel {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--muted);
 }
 
 .rowCardGrid {
   display: grid;
-  gap: 8px;
+  gap: 14px;
 }
 
 /* ── Buttons ── */
@@ -292,6 +298,14 @@ textarea {
 .miniButton:hover:not(:disabled) {
   background: rgba(128, 128, 128, 0.22);
   color: var(--ink);
+}
+
+.addRowButton {
+  justify-self: end;
+}
+
+.rowCard .removeRowButton {
+  justify-self: end;
 }
 
 /* ── Actions ── */
