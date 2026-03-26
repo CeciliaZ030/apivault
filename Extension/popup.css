@@ -103,7 +103,7 @@ body {
 .tab {
   padding: 5px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--muted);
   font: inherit;
@@ -161,7 +161,7 @@ body {
 
 .form {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 label {
@@ -182,7 +182,7 @@ select {
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--field-bg);
   color: var(--ink);
   font: inherit;
@@ -232,8 +232,13 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 8px;
+  margin-top: 8px;
+  padding-top: 14px;
   border-top: 0.5px solid var(--separator);
+}
+
+.stack {
+  margin-top: -6px;
 }
 
 .sectionHeader span {
@@ -249,11 +254,6 @@ textarea {
 
 /* ── Row cards ── */
 
-.stack {
-  display: grid;
-  gap: 0;
-}
-
 .rowCard {
   display: grid;
   gap: 12px;
@@ -263,6 +263,7 @@ textarea {
 
 .rowCard:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .rowCardHeader {
@@ -289,7 +290,7 @@ textarea {
   height: 26px;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   background: rgba(128, 128, 128, 0.12);
   color: var(--muted);
   font: inherit;
@@ -313,7 +314,8 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding-top: 8px;
+  margin-top: 8px;
+  padding-top: 14px;
   border-top: 0.5px solid var(--separator);
 }
 
@@ -326,7 +328,7 @@ button.primary,
 button.secondary {
   padding: 6px 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;
