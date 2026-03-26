@@ -244,6 +244,39 @@ final class VaultService {
         return record
     }
 
+    func updateUsageLog(
+        for record: UsageLogRecord,
+        usage: String,
+        usedSite: String,
+        configurationLink: String,
+        serverIP: String,
+        notes: String
+    ) throws {
+        let trimmedUsage = usage.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedUsage.isEmpty else {
+            throw VaultError.validation("Usage description is required.")
+        }
+
+        let trimmedSite = usedSite.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedSite.isEmpty else {
+            throw VaultError.validation("Used site is required.")
+        }
+
+        record.usage = trimmedUsage
+        record.usedSite = trimmedSite
+        record.configurationLink = normalizedOptionalString(configurationLink)
+        record.serverIP = normalizedOptionalString(serverIP)
+        record.notes = normalizedOptionalString(notes)
+        record.updatedAt = Date()
+
+        try modelContext.save()
+    }
+
+    func deleteUsageLog(_ record: UsageLogRecord) throws {
+        modelContext.delete(record)
+        try modelContext.save()
+    }
+
     func delete(_ item: VaultItemRecord) throws {
         try keychainService.delete(account: item.keychainAccount)
         modelContext.delete(item)

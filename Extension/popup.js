@@ -452,6 +452,7 @@ async function submitUsage(event) {
     clearUsageFormFields();
     await persistDraft();
     setStatus(`Logged ${drafts.length} usage entr${drafts.length === 1 ? "y" : "ies"}.`, "success");
+    await refreshPlatforms();
   } catch (error) {
     setStatus(error.message, "error");
   } finally {

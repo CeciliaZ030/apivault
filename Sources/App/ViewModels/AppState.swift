@@ -90,6 +90,32 @@ final class AppState: ObservableObject {
         showTransientMessage("Logged usage for \(record.sourceProviderDisplayName).")
     }
 
+    func updateUsageLog(
+        for record: UsageLogRecord,
+        usage: String,
+        usedSite: String,
+        configurationLink: String,
+        serverIP: String,
+        notes: String
+    ) throws {
+        try vaultService.updateUsageLog(
+            for: record,
+            usage: usage,
+            usedSite: usedSite,
+            configurationLink: configurationLink,
+            serverIP: serverIP,
+            notes: notes
+        )
+        markDataChanged()
+        showTransientMessage("Updated usage log.")
+    }
+
+    func deleteUsageLog(_ record: UsageLogRecord) throws {
+        try vaultService.deleteUsageLog(record)
+        markDataChanged()
+        showTransientMessage("Deleted usage log.")
+    }
+
     func delete(_ item: VaultItemRecord) throws {
         try vaultService.delete(item)
         markDataChanged()

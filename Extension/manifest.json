@@ -6,7 +6,8 @@
   "permissions": [
     "activeTab",
     "tabs",
-    "nativeMessaging"
+    "nativeMessaging",
+    "storage"
   ],
   "host_permissions": [
     "http://localhost:38173/*"

@@ -21,6 +21,21 @@ struct RootView: View {
     @State private var isEditingKeys = false
     @State private var editedKeyNames: [UUID: String] = [:]
     @State private var editedValues: [UUID: String] = [:]
+    @State private var isEditingMetadata = false
+    @State private var editedPageTitle = ""
+    @State private var editedPlatformURL = ""
+    @State private var editedSourceURL = ""
+    @State private var editedNotes = ""
+    @State private var editedProviderName = ""
+    @State private var editedEnvironment = ""
+    @State private var editedKeyName = ""
+    @State private var showingUsageLogs = false
+    @State private var isEditingUsageLogs = false
+    @State private var editedUsage: [UUID: String] = [:]
+    @State private var editedUsedSite: [UUID: String] = [:]
+    @State private var editedConfigLink: [UUID: String] = [:]
+    @State private var editedServerIP: [UUID: String] = [:]
+    @State private var editedUsageNotes: [UUID: String] = [:]
     @FocusState private var focusedField: FocusField?
 
     private static let draftEnvironmentSelectionID = "__draft_environment__"
@@ -155,6 +170,11 @@ struct RootView: View {
         }
     }
 
+    private var visibleUsageLogs: [UsageLogRecord] {
+        guard let group = selectedGroup else { return [] }
+        return usageLogs.filter { $0.sourceProviderIdentity == group.id }
+    }
+
     private var focusedItem: VaultItemRecord? {
         if let selectedID,
            let item = visibleItems.first(where: { $0.id == selectedID }) {
@@ -199,7 +219,10 @@ struct RootView: View {
             refreshVisibleSecrets()
             resetCurrentEnvironmentDraftRows()
             cancelEditingKeys()
+            cancelEditingMetadata()
             cancelDraftEnvironment()
+            cancelEditingUsageLogs()
+            showingUsageLogs = false
         }
         .onChange(of: selectedEnvironmentName) { _, newValue in
             if newValue != Self.draftEnvironmentSelectionID {
@@ -210,6 +233,9 @@ struct RootView: View {
             refreshVisibleSecrets()
             resetCurrentEnvironmentDraftRows()
             cancelEditingKeys()
+            cancelEditingMetadata()
+            cancelEditingUsageLogs()
+            showingUsageLogs = false
         }
         .onChange(of: visibleSignature) { _, _ in
             refreshVisibleSecrets()
@@ -322,6 +348,23 @@ struct RootView: View {
             }
             .buttonStyle(.borderedProminent)
 
+            if isEditingMetadata {
+                Button("Save") {
+                    saveEditedMetadata()
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button("Cancel") {
+                    cancelEditingMetadata()
+                }
+                .buttonStyle(.bordered)
+            } else if let item = focusedItem ?? group.items.first {
+                Button("Edit") {
+                    startEditingMetadata(for: item, group: group)
+                }
+                .buttonStyle(.bordered)
+            }
+
             Button("Export") {
                 do {
                     try appState.exportMetadata()
@@ -341,18 +384,32 @@ struct RootView: View {
 
     private func metadataSection(for group: ProviderGroup) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            metadataRow(label: "Platform", value: group.displayName)
-            metadataRow(label: "Records", value: "\(group.items.count)")
-            metadataRow(label: "Environments", value: group.environments.joined(separator: ", "))
-            metadataRow(label: "Usage Logs", value: "\(usageCount(for: group))")
-            metadataRow(label: "Bridge", value: appState.bridgeStatusMessage ?? "Bridge unavailable")
-
-            if let item = focusedItem ?? group.items.first {
+            if isEditingMetadata {
+                editableMetadataRow(label: "Platform", text: $editedProviderName)
+                metadataRow(label: "Records", value: "\(group.items.count)")
+                editableMetadataRow(label: "Environment", text: $editedEnvironment)
+                metadataRow(label: "Usage Logs", value: "\(usageCount(for: group))")
+                metadataRow(label: "Bridge", value: appState.bridgeStatusMessage ?? "Bridge unavailable")
                 Divider()
-                metadataRow(label: "Page Title", value: item.pageTitle ?? "None")
-                metadataRow(label: "Platform Link", value: item.platformURL ?? "None")
-                metadataRow(label: "Current Link", value: item.sourceURL)
-                metadataRow(label: "Notes", value: item.notes ?? "None")
+                editableMetadataRow(label: "Key Name", text: $editedKeyName)
+                editableMetadataRow(label: "Page Title", text: $editedPageTitle)
+                editableMetadataRow(label: "Platform Link", text: $editedPlatformURL)
+                editableMetadataRow(label: "Current Link", text: $editedSourceURL)
+                editableMetadataRow(label: "Notes", text: $editedNotes)
+            } else {
+                metadataRow(label: "Platform", value: group.displayName)
+                metadataRow(label: "Records", value: "\(group.items.count)")
+                metadataRow(label: "Environments", value: group.environments.joined(separator: ", "))
+                metadataRow(label: "Usage Logs", value: "\(usageCount(for: group))")
+                metadataRow(label: "Bridge", value: appState.bridgeStatusMessage ?? "Bridge unavailable")
+
+                if let item = focusedItem ?? group.items.first {
+                    Divider()
+                    metadataRow(label: "Page Title", value: item.pageTitle ?? "None")
+                    metadataRow(label: "Platform Link", value: item.platformURL ?? "None")
+                    metadataRow(label: "Current Link", value: item.sourceURL)
+                    metadataRow(label: "Notes", value: item.notes ?? "None")
+                }
             }
         }
         .textSelection(.enabled)
@@ -424,12 +481,23 @@ struct RootView: View {
     private var keySection: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(selectedEnvironment ?? "Keys")
+                Text(showingUsageLogs ? "Usage Logs" : (selectedEnvironment ?? "Keys"))
                     .font(.headline)
+
+                Button {
+                    showingUsageLogs.toggle()
+                    if !showingUsageLogs {
+                        cancelEditingUsageLogs()
+                    }
+                } label: {
+                    Image(systemName: showingUsageLogs ? "key.fill" : "list.bullet.clipboard")
+                        .help(showingUsageLogs ? "Show Keys" : "Show Usage Logs")
+                }
+                .buttonStyle(.bordered)
 
                 Spacer()
 
-                if !isDraftEnvironmentSelected {
+                if !showingUsageLogs, !isDraftEnvironmentSelected {
                     Button("-") {
                         removeCurrentEnvironmentDraftRow()
                     }
@@ -449,7 +517,9 @@ struct RootView: View {
                     .foregroundStyle(.red)
             }
 
-            if isDraftEnvironmentSelected, let group = selectedGroup {
+            if showingUsageLogs {
+                usageLogSection
+            } else if isDraftEnvironmentSelected, let group = selectedGroup {
                 draftEnvironmentEditor(for: group)
             } else if visibleItems.isEmpty, currentEnvironmentDraftRows.isEmpty {
                 ContentUnavailableView(
@@ -486,42 +556,222 @@ struct RootView: View {
                 }
             }
 
-            HStack {
-                Spacer()
+            if !showingUsageLogs {
+                HStack {
+                    Spacer()
 
-                if !isDraftEnvironmentSelected, !visibleItems.isEmpty {
-                    if isEditingKeys {
+                    if !isDraftEnvironmentSelected, !visibleItems.isEmpty {
+                        if isEditingKeys {
+                            Button("Cancel") {
+                                cancelEditingKeys()
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button("Save") {
+                                saveEditedKeys()
+                            }
+                            .buttonStyle(.borderedProminent)
+                        } else {
+                            Button("Edit") {
+                                startEditingKeys()
+                            }
+                            .disabled(!appState.unlockManager.isUnlocked)
+                            .buttonStyle(.bordered)
+                        }
+                    }
+
+                    if !isEditingKeys {
+                        Button(isDraftEnvironmentSelected ? "Save Environment" : "Save") {
+                            if let group = selectedGroup, isDraftEnvironmentSelected {
+                                saveDraftEnvironment(for: group)
+                            } else if let group = selectedGroup {
+                                saveCurrentEnvironmentDraftRows(for: group)
+                            }
+                        }
+                        .disabled(!isDraftEnvironmentSelected && currentEnvironmentDraftRows.isEmpty)
+                        .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
+        }
+    }
+
+    private var usageLogSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if visibleUsageLogs.isEmpty {
+                ContentUnavailableView(
+                    "No Usage Logs",
+                    systemImage: "list.bullet.clipboard",
+                    description: Text("Usage logs are created from the Safari extension.")
+                )
+                .frame(maxWidth: .infinity, minHeight: 260)
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                )
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(visibleUsageLogs, id: \.id) { record in
+                            usageLogRow(for: record)
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            if !visibleUsageLogs.isEmpty {
+                HStack {
+                    Spacer()
+
+                    if isEditingUsageLogs {
                         Button("Cancel") {
-                            cancelEditingKeys()
+                            cancelEditingUsageLogs()
                         }
                         .buttonStyle(.bordered)
 
                         Button("Save") {
-                            saveEditedKeys()
+                            saveEditedUsageLogs()
                         }
                         .buttonStyle(.borderedProminent)
                     } else {
                         Button("Edit") {
-                            startEditingKeys()
+                            startEditingUsageLogs()
                         }
-                        .disabled(!appState.unlockManager.isUnlocked)
                         .buttonStyle(.bordered)
                     }
                 }
-
-                if !isEditingKeys {
-                    Button(isDraftEnvironmentSelected ? "Save Environment" : "Save") {
-                        if let group = selectedGroup, isDraftEnvironmentSelected {
-                            saveDraftEnvironment(for: group)
-                        } else if let group = selectedGroup {
-                            saveCurrentEnvironmentDraftRows(for: group)
-                        }
-                    }
-                    .disabled(!isDraftEnvironmentSelected && currentEnvironmentDraftRows.isEmpty)
-                    .buttonStyle(.borderedProminent)
-                }
             }
         }
+    }
+
+    private func usageLogRow(for record: UsageLogRecord) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if isEditingUsageLogs {
+                editableField(
+                    title: "Usage",
+                    text: Binding(
+                        get: { editedUsage[record.id] ?? record.usage },
+                        set: { editedUsage[record.id] = $0 }
+                    ),
+                    tint: Color.purple.opacity(0.10),
+                    border: Color.purple.opacity(0.35)
+                )
+
+                editableField(
+                    title: "Used Site",
+                    text: Binding(
+                        get: { editedUsedSite[record.id] ?? record.usedSite },
+                        set: { editedUsedSite[record.id] = $0 }
+                    ),
+                    tint: Color.green.opacity(0.10),
+                    border: Color.green.opacity(0.35)
+                )
+
+                editableField(
+                    title: "Config Link",
+                    text: Binding(
+                        get: { editedConfigLink[record.id] ?? record.configurationLink ?? "" },
+                        set: { editedConfigLink[record.id] = $0 }
+                    ),
+                    tint: Color(nsColor: .controlBackgroundColor),
+                    border: Color(nsColor: .separatorColor)
+                )
+
+                editableField(
+                    title: "Server IP",
+                    text: Binding(
+                        get: { editedServerIP[record.id] ?? record.serverIP ?? "" },
+                        set: { editedServerIP[record.id] = $0 }
+                    ),
+                    tint: Color(nsColor: .controlBackgroundColor),
+                    border: Color(nsColor: .separatorColor)
+                )
+
+                editableField(
+                    title: "Notes",
+                    text: Binding(
+                        get: { editedUsageNotes[record.id] ?? record.notes ?? "" },
+                        set: { editedUsageNotes[record.id] = $0 }
+                    ),
+                    tint: Color(nsColor: .controlBackgroundColor),
+                    border: Color(nsColor: .separatorColor)
+                )
+            } else {
+                highlightedField(
+                    title: "Usage",
+                    value: record.usage,
+                    tint: Color.purple.opacity(0.10),
+                    border: Color.purple.opacity(0.35),
+                    font: .headline
+                )
+
+                highlightedField(
+                    title: "Used Site",
+                    value: record.usedSite,
+                    tint: Color.green.opacity(0.10),
+                    border: Color.green.opacity(0.35),
+                    font: .body
+                )
+
+                if let configLink = record.configurationLink, !configLink.isEmpty {
+                    highlightedField(
+                        title: "Config Link",
+                        value: configLink,
+                        tint: Color(nsColor: .controlBackgroundColor),
+                        border: Color(nsColor: .separatorColor),
+                        font: .body
+                    )
+                }
+
+                if let ip = record.serverIP, !ip.isEmpty {
+                    highlightedField(
+                        title: "Server IP",
+                        value: ip,
+                        tint: Color(nsColor: .controlBackgroundColor),
+                        border: Color(nsColor: .separatorColor),
+                        font: .system(.body, design: .monospaced)
+                    )
+                }
+
+                if let notes = record.notes, !notes.isEmpty {
+                    highlightedField(
+                        title: "Notes",
+                        value: notes,
+                        tint: Color(nsColor: .controlBackgroundColor),
+                        border: Color(nsColor: .separatorColor),
+                        font: .body
+                    )
+                }
+            }
+
+            HStack(spacing: 10) {
+                Text(record.loggedAt.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Button("Delete", role: .destructive) {
+                    deleteUsageLog(record)
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
     }
 
     private var newPlatformEditor: some View {
@@ -721,17 +971,12 @@ struct RootView: View {
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(item.id == focusedItem?.id ? Color.accentColor.opacity(0.10) : Color(nsColor: .controlBackgroundColor))
+                .fill(Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(item.id == focusedItem?.id ? Color.accentColor.opacity(0.35) : Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .onTapGesture {
-            selectedID = item.id
-            detailError = nil
-        }
     }
 
     private var currentEnvironmentDraftEditor: some View {
@@ -788,6 +1033,29 @@ struct RootView: View {
                 .font(.callout)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func editableMetadataRow(label: String, text: Binding<String>) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Text(label)
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 110, alignment: .leading)
+
+            TextField(label, text: text)
+                .textFieldStyle(.plain)
+                .font(.callout)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color(nsColor: .textBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color.accentColor.opacity(0.4), lineWidth: 1)
+                )
         }
     }
 
@@ -875,6 +1143,110 @@ struct RootView: View {
             editedValues.removeAll()
             detailError = nil
             refreshVisibleSecrets()
+        } catch {
+            detailError = error.localizedDescription
+        }
+    }
+
+    private func startEditingUsageLogs() {
+        editedUsage.removeAll()
+        editedUsedSite.removeAll()
+        editedConfigLink.removeAll()
+        editedServerIP.removeAll()
+        editedUsageNotes.removeAll()
+        for record in visibleUsageLogs {
+            editedUsage[record.id] = record.usage
+            editedUsedSite[record.id] = record.usedSite
+            editedConfigLink[record.id] = record.configurationLink ?? ""
+            editedServerIP[record.id] = record.serverIP ?? ""
+            editedUsageNotes[record.id] = record.notes ?? ""
+        }
+        isEditingUsageLogs = true
+        detailError = nil
+    }
+
+    private func cancelEditingUsageLogs() {
+        isEditingUsageLogs = false
+        editedUsage.removeAll()
+        editedUsedSite.removeAll()
+        editedConfigLink.removeAll()
+        editedServerIP.removeAll()
+        editedUsageNotes.removeAll()
+        detailError = nil
+    }
+
+    private func saveEditedUsageLogs() {
+        do {
+            for record in visibleUsageLogs {
+                let newUsage = editedUsage[record.id] ?? record.usage
+                let newSite = editedUsedSite[record.id] ?? record.usedSite
+                let newConfig = editedConfigLink[record.id] ?? record.configurationLink ?? ""
+                let newIP = editedServerIP[record.id] ?? record.serverIP ?? ""
+                let newNotes = editedUsageNotes[record.id] ?? record.notes ?? ""
+
+                let changed = newUsage != record.usage
+                    || newSite != record.usedSite
+                    || newConfig != (record.configurationLink ?? "")
+                    || newIP != (record.serverIP ?? "")
+                    || newNotes != (record.notes ?? "")
+
+                if changed {
+                    try appState.updateUsageLog(
+                        for: record,
+                        usage: newUsage,
+                        usedSite: newSite,
+                        configurationLink: newConfig,
+                        serverIP: newIP,
+                        notes: newNotes
+                    )
+                }
+            }
+            cancelEditingUsageLogs()
+        } catch {
+            detailError = error.localizedDescription
+        }
+    }
+
+    private func deleteUsageLog(_ record: UsageLogRecord) {
+        do {
+            try appState.deleteUsageLog(record)
+            detailError = nil
+        } catch {
+            detailError = error.localizedDescription
+        }
+    }
+
+    private func startEditingMetadata(for item: VaultItemRecord, group: ProviderGroup) {
+        editedProviderName = group.displayName
+        editedEnvironment = item.environmentName
+        editedKeyName = item.keyName ?? ""
+        editedPageTitle = item.pageTitle ?? ""
+        editedPlatformURL = item.platformURL ?? ""
+        editedSourceURL = item.sourceURL
+        editedNotes = item.notes ?? ""
+        isEditingMetadata = true
+    }
+
+    private func cancelEditingMetadata() {
+        isEditingMetadata = false
+        detailError = nil
+    }
+
+    private func saveEditedMetadata() {
+        guard let item = focusedItem ?? selectedGroup?.items.first else { return }
+        do {
+            try appState.updateMetadata(
+                for: item,
+                providerDisplayName: editedProviderName,
+                environment: editedEnvironment,
+                keyName: editedKeyName,
+                platformURL: editedPlatformURL,
+                sourceURL: editedSourceURL,
+                pageTitle: editedPageTitle,
+                notes: editedNotes
+            )
+            isEditingMetadata = false
+            detailError = nil
         } catch {
             detailError = error.localizedDescription
         }

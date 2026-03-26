@@ -288,7 +288,6 @@
 				CA3CA1DAE1D0241964B5581A /* AppConstants.swift in Sources */,
 				E84D694769E2FBE50E6FFA2E /* AppState.swift in Sources */,
 				73BF756382C4ABB97FE278C8 /* BridgeModels.swift in Sources */,
-				F1A2B3C4D5E6F78901234567 /* EditMetadataView.swift in Sources */,
 				343BAFD2D5776E043FD1637F /* InstructionsView.swift in Sources */,
 				3F732209D19F2AFE6C97C724 /* KeychainService.swift in Sources */,
 				258C8C75C14F73E1C8249D4E /* LocalBridgeServer.swift in Sources */,
