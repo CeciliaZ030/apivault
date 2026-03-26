@@ -13,8 +13,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: rgba(40, 38, 38, 0.30);
-    --ink: #f0edeb;
-    --muted: rgba(235, 235, 245, 0.6);
+    --ink: #ffffff;
+    --muted: rgba(255, 255, 255, 0.7);
     --separator: rgba(255, 255, 255, 0.1);
     --field-bg: rgba(255, 255, 255, 0.06);
     --accent: #5a9aff;
@@ -103,7 +103,7 @@ body {
 .tab {
   padding: 5px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   color: var(--muted);
   font: inherit;
@@ -135,6 +135,10 @@ body {
   font-size: 12px;
 }
 
+.status:empty {
+  display: none;
+}
+
 .status.error {
   color: var(--warn);
 }
@@ -161,19 +165,19 @@ body {
 
 .form {
   display: grid;
-  gap: 16px;
+  gap: 12px;
 }
 
 label {
   display: grid;
-  gap: 16px;
+  gap: 10px;
 }
 
 label span,
 .sectionHeader span {
   font-size: 12px;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--ink);
 }
 
 input,
@@ -182,7 +186,7 @@ select {
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--field-bg);
   color: var(--ink);
   font: inherit;
@@ -232,8 +236,13 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 8px;
+  margin-top: 8px;
+  padding-top: 14px;
   border-top: 0.5px solid var(--separator);
+}
+
+.stack {
+  margin-top: -6px;
 }
 
 .sectionHeader span {
@@ -241,12 +250,13 @@ textarea {
   font-weight: 600;
 }
 
-/* ── Row cards ── */
-
-.stack {
-  display: grid;
-  gap: 0;
+.rowControls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
+
+/* ── Row cards ── */
 
 .rowCard {
   display: grid;
@@ -257,6 +267,7 @@ textarea {
 
 .rowCard:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .rowCardHeader {
@@ -273,7 +284,7 @@ textarea {
 
 .rowCardGrid {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 /* ── Buttons ── */
@@ -283,7 +294,7 @@ textarea {
   height: 26px;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   background: rgba(128, 128, 128, 0.12);
   color: var(--muted);
   font: inherit;
@@ -300,14 +311,6 @@ textarea {
   color: var(--ink);
 }
 
-.addRowButton {
-  justify-self: end;
-}
-
-.rowCard .removeRowButton {
-  justify-self: end;
-}
-
 /* ── Actions ── */
 
 .actions {
@@ -315,8 +318,15 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding-top: 8px;
+  margin-top: 8px;
+  padding-top: 14px;
   border-top: 0.5px solid var(--separator);
+}
+
+.actionsGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .helper {
@@ -328,7 +338,7 @@ button.primary,
 button.secondary {
   padding: 6px 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font: inherit;
   font-size: 12px;
   font-weight: 600;

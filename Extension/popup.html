@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:38173; style-src 'self' 'unsafe-inline'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>API Key Manager</title>
   <link rel="stylesheet" href="popup.css">
@@ -76,6 +76,7 @@
 
           <div class="actions">
             <button id="openAppButton" type="button" class="secondary">Open Dashboard</button>
+            <button id="clearKeysButton" type="button" class="secondary">Clear</button>
             <button id="saveKeysButton" type="submit" class="primary">Save Keys</button>
           </div>
         </form>
@@ -123,7 +124,10 @@
 
           <div class="actions">
             <span class="helper">Current page is attached automatically.</span>
-            <button id="saveUsageButton" type="submit" class="primary">Log Usage</button>
+            <div class="actionsGroup">
+              <button id="clearUsageButton" type="button" class="secondary">Clear</button>
+              <button id="saveUsageButton" type="submit" class="primary">Log Usage</button>
+            </div>
           </div>
         </form>
       </section>

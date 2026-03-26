@@ -10,6 +10,7 @@ final class AppState: ObservableObject {
 
     @Published var bridgeStatusMessage: String?
     @Published var lastTransientMessage: String?
+    @Published private(set) var dataRevision: Int = 0
 
     private let keychainService = KeychainService()
     private lazy var vaultService = VaultService(
@@ -72,16 +73,19 @@ final class AppState: ObservableObject {
 
     func saveManualDraft(_ draft: CaptureDraft) throws {
         let record = try vaultService.saveDraft(draft)
+        markDataChanged()
         showTransientMessage("Saved \(record.providerDisplayName) key.")
     }
 
     func saveUsageLog(_ draft: UsageLogDraft) throws {
         let record = try vaultService.saveUsageLog(draft)
+        markDataChanged()
         showTransientMessage("Logged usage for \(record.sourceProviderDisplayName).")
     }
 
     func delete(_ item: VaultItemRecord) throws {
         try vaultService.delete(item)
+        markDataChanged()
         showTransientMessage("Deleted \(item.providerDisplayName).")
     }
 
@@ -98,6 +102,16 @@ final class AppState: ObservableObject {
         try vaultService.copyAssignment(for: item)
         let label = item.keyName?.isEmpty == false ? item.keyName! : item.providerDisplayName
         showTransientMessage("Copied \(label)=…")
+    }
+
+    func updateSecret(for item: VaultItemRecord, newValue: String) throws {
+        try vaultService.updateSecret(for: item, newValue: newValue)
+        markDataChanged()
+    }
+
+    func updateKeyName(for item: VaultItemRecord, newName: String) throws {
+        try vaultService.updateKeyName(for: item, newName: newName)
+        markDataChanged()
     }
 
     func updateMetadata(
@@ -120,6 +134,7 @@ final class AppState: ObservableObject {
             pageTitle: pageTitle,
             notes: notes
         )
+        markDataChanged()
         showTransientMessage("Updated metadata for \(item.providerDisplayName).")
     }
 
@@ -150,9 +165,18 @@ final class AppState: ObservableObject {
         ProviderCatalog.recognize(urlString: urlString)
     }
 
-    func savedPlatforms() -> [SavedPlatformOption] {
+    func vaultItems() -> [VaultItemRecord] {
         let descriptor = FetchDescriptor<VaultItemRecord>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
-        let records = (try? modelContainer.mainContext.fetch(descriptor)) ?? []
+        return (try? modelContainer.mainContext.fetch(descriptor)) ?? []
+    }
+
+    func usageLogItems() -> [UsageLogRecord] {
+        let descriptor = FetchDescriptor<UsageLogRecord>(sortBy: [SortDescriptor(\.updatedAt, order: .reverse)])
+        return (try? modelContainer.mainContext.fetch(descriptor)) ?? []
+    }
+
+    func savedPlatforms() -> [SavedPlatformOption] {
+        let records = vaultItems()
 
         return Dictionary(grouping: records, by: \.providerIdentity)
             .map { identity, grouped in
@@ -194,6 +218,7 @@ final class AppState: ObservableObject {
 
             do {
                 let record = try vaultService.saveDraft(draft)
+                markDataChanged()
                 showTransientMessage("Saved \(record.providerDisplayName) key from Safari.")
                 activateApp()
                 return successResponse(id: request.id, message: "Saved \(record.providerDisplayName) key.", savedItemID: record.id.uuidString)
@@ -210,6 +235,7 @@ final class AppState: ObservableObject {
 
             do {
                 let record = try vaultService.saveUsageLog(draft)
+                markDataChanged()
                 showTransientMessage("Logged usage for \(record.sourceProviderDisplayName).")
                 return successResponse(id: request.id, message: "Logged usage for \(record.sourceProviderDisplayName).", savedUsageLogID: record.id.uuidString)
             } catch let error as VaultError {
@@ -249,5 +275,9 @@ final class AppState: ObservableObject {
                 lastTransientMessage = nil
             }
         }
+    }
+
+    private func markDataChanged() {
+        dataRevision &+= 1
     }
 }

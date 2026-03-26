@@ -1,20 +1,51 @@
 import AppKit
-import SwiftData
 import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var appState: AppState
-    @Query(sort: [SortDescriptor(\VaultItemRecord.updatedAt, order: .reverse)]) private var items: [VaultItemRecord]
-    @Query(sort: [SortDescriptor(\UsageLogRecord.updatedAt, order: .reverse)]) private var usageLogs: [UsageLogRecord]
 
     @State private var searchText = ""
     @State private var selectedProviderIdentity: String?
     @State private var selectedEnvironmentName: String?
     @State private var selectedID: UUID?
-    @State private var isShowingAddSheet = false
-    @State private var itemBeingEdited: VaultItemRecord?
     @State private var detailError: String?
     @State private var revealedSecrets: [UUID: String] = [:]
+    @State private var isCreatingEnvironment = false
+    @State private var draftEnvironmentName = ""
+    @State private var draftRows = [DraftKeyRow()]
+    @State private var currentEnvironmentDraftRows: [DraftKeyRow] = []
+    @State private var isCreatingPlatform = false
+    @State private var draftPlatformName = ""
+    @State private var draftPlatformEnvironment = ""
+    @State private var draftPlatformRows = [DraftKeyRow()]
+    @State private var isEditingKeys = false
+    @State private var editedKeyNames: [UUID: String] = [:]
+    @State private var editedValues: [UUID: String] = [:]
+    @FocusState private var focusedField: FocusField?
+
+    private static let draftEnvironmentSelectionID = "__draft_environment__"
+
+    private struct DraftKeyRow: Identifiable, Equatable {
+        let id = UUID()
+        var keyName = ""
+        var value = ""
+    }
+
+    private enum FocusField: Hashable {
+        case platformName
+        case environmentName
+        case keyName(UUID)
+    }
+
+    private var items: [VaultItemRecord] {
+        _ = appState.dataRevision
+        return appState.vaultItems()
+    }
+
+    private var usageLogs: [UsageLogRecord] {
+        _ = appState.dataRevision
+        return appState.usageLogItems()
+    }
 
     private struct ProviderGroup: Identifiable {
         let id: String
@@ -97,8 +128,16 @@ struct RootView: View {
         return providerGroups.first
     }
 
+    private var isDraftEnvironmentSelected: Bool {
+        isCreatingEnvironment && selectedEnvironmentName == Self.draftEnvironmentSelectionID
+    }
+
     private var selectedEnvironment: String? {
         guard let group = selectedGroup else { return nil }
+        if isDraftEnvironmentSelected {
+            let trimmed = draftEnvironmentName.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "New Environment" : trimmed
+        }
         if let selectedEnvironmentName,
            group.environments.contains(selectedEnvironmentName) {
             return selectedEnvironmentName
@@ -109,6 +148,7 @@ struct RootView: View {
 
     private var visibleItems: [VaultItemRecord] {
         guard let group = selectedGroup else { return [] }
+        guard !isDraftEnvironmentSelected else { return [] }
         guard let selectedEnvironment else { return group.items }
         return group.items.filter {
             EnvironmentPreset.canonicalName(for: $0.environmentName) == selectedEnvironment
@@ -145,25 +185,6 @@ struct RootView: View {
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
-        .sheet(isPresented: $isShowingAddSheet) {
-            AddKeySheet { draft in
-                try appState.saveManualDraft(draft)
-            }
-        }
-        .sheet(item: $itemBeingEdited) { item in
-            EditMetadataSheet(item: item) { provider, environment, keyName, platformURL, sourceURL, pageTitle, notes in
-                try appState.updateMetadata(
-                    for: item,
-                    providerDisplayName: provider,
-                    environment: environment,
-                    keyName: keyName,
-                    platformURL: platformURL,
-                    sourceURL: sourceURL,
-                    pageTitle: pageTitle,
-                    notes: notes
-                )
-            }
-        }
         .onAppear {
             synchronizeSelection()
             refreshVisibleSecrets()
@@ -176,11 +197,19 @@ struct RootView: View {
             synchronizeSelection()
             detailError = nil
             refreshVisibleSecrets()
+            resetCurrentEnvironmentDraftRows()
+            cancelEditingKeys()
+            cancelDraftEnvironment()
         }
-        .onChange(of: selectedEnvironmentName) { _, _ in
+        .onChange(of: selectedEnvironmentName) { _, newValue in
+            if newValue != Self.draftEnvironmentSelectionID {
+                cancelDraftEnvironment()
+            }
             synchronizeSelection()
             detailError = nil
             refreshVisibleSecrets()
+            resetCurrentEnvironmentDraftRows()
+            cancelEditingKeys()
         }
         .onChange(of: visibleSignature) { _, _ in
             refreshVisibleSecrets()
@@ -199,38 +228,63 @@ struct RootView: View {
             TextField("Search", text: $searchText)
                 .textFieldStyle(.roundedBorder)
 
-            if providerGroups.isEmpty {
-                ContentUnavailableView(
-                    "No Platforms Yet",
-                    systemImage: "key.horizontal",
-                    description: Text("Save a key from the dashboard or Safari extension to populate the manager.")
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                List(selection: $selectedProviderIdentity) {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(providerGroups) { group in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(group.displayName)
-                                .font(.headline)
-                            Text("Updated \(group.updatedAt.formatted(date: .abbreviated, time: .shortened))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            Text("Created \(group.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        Button {
+                            isCreatingPlatform = false
+                            selectedProviderIdentity = group.id
+                            selectedEnvironmentName = group.environments.first
+                            selectedID = group.items.first?.id
+                        } label: {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(group.displayName)
+                                    .font(.headline)
+                                    .foregroundStyle(selectedProviderIdentity == group.id && !isCreatingPlatform ? .white : .primary)
+                                Text("Updated \(group.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+                                    .font(.caption)
+                                    .foregroundStyle(selectedProviderIdentity == group.id && !isCreatingPlatform ? Color.white.opacity(0.88) : .secondary)
+                                Text("Created \(group.createdAt.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(.caption)
+                                    .foregroundStyle(selectedProviderIdentity == group.id && !isCreatingPlatform ? Color.white.opacity(0.88) : .secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(selectedProviderIdentity == group.id && !isCreatingPlatform ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(
+                                        selectedProviderIdentity == group.id && !isCreatingPlatform
+                                            ? Color.accentColor.opacity(0.35)
+                                            : Color(nsColor: .separatorColor),
+                                        lineWidth: 1
+                                    )
+                            )
                         }
-                        .padding(.vertical, 4)
-                        .tag(group.id)
+                        .buttonStyle(.plain)
                     }
                 }
-                .listStyle(.sidebar)
+                .padding(.vertical, 2)
             }
+
+            Button {
+                startCreatingPlatform()
+            } label: {
+                Label("New Platform", systemImage: "plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
         }
     }
 
     private var managerPane: some View {
         Group {
-            if let group = selectedGroup {
+            if isCreatingPlatform {
+                newPlatformEditor
+            } else if let group = selectedGroup {
                 VStack(alignment: .leading, spacing: 16) {
                     managerHeader(for: group)
                     metadataSection(for: group)
@@ -285,24 +339,31 @@ struct RootView: View {
     }
 
     private func metadataSection(for group: ProviderGroup) -> some View {
-        GroupBox("Metadata") {
-            VStack(alignment: .leading, spacing: 10) {
-                LabeledContent("Platform", value: group.displayName)
-                LabeledContent("Records", value: "\(group.items.count)")
-                LabeledContent("Environments", value: group.environments.joined(separator: ", "))
-                LabeledContent("Usage Logs", value: "\(usageCount(for: group))")
-                LabeledContent("Bridge", value: appState.bridgeStatusMessage ?? "Bridge unavailable")
+        VStack(alignment: .leading, spacing: 12) {
+            metadataRow(label: "Platform", value: group.displayName)
+            metadataRow(label: "Records", value: "\(group.items.count)")
+            metadataRow(label: "Environments", value: group.environments.joined(separator: ", "))
+            metadataRow(label: "Usage Logs", value: "\(usageCount(for: group))")
+            metadataRow(label: "Bridge", value: appState.bridgeStatusMessage ?? "Bridge unavailable")
 
-                if let item = focusedItem {
-                    Divider()
-                    LabeledContent("Page Title", value: item.pageTitle ?? "None")
-                    LabeledContent("Platform Link", value: item.platformURL ?? "None")
-                    LabeledContent("Current Link", value: item.sourceURL)
-                    LabeledContent("Notes", value: item.notes ?? "None")
-                }
+            if let item = focusedItem ?? group.items.first {
+                Divider()
+                metadataRow(label: "Page Title", value: item.pageTitle ?? "None")
+                metadataRow(label: "Platform Link", value: item.platformURL ?? "None")
+                metadataRow(label: "Current Link", value: item.sourceURL)
+                metadataRow(label: "Notes", value: item.notes ?? "None")
             }
-            .textSelection(.enabled)
         }
+        .textSelection(.enabled)
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
     }
 
     private func environmentBar(for group: ProviderGroup) -> some View {
@@ -321,82 +382,345 @@ struct RootView: View {
                 }
             }
 
-            Button("+") {
-                isShowingAddSheet = true
+            if isCreatingEnvironment {
+                ZStack {
+                    Text(draftEnvironmentName.isEmpty ? "Empty" : draftEnvironmentName)
+                        .font(.system(size: 13, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .opacity(0)
+
+                    TextField("Empty", text: $draftEnvironmentName)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                }
+                .fixedSize()
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color.accentColor.opacity(0.12))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color.accentColor.opacity(0.45), lineWidth: 1)
+                )
+                .focused($focusedField, equals: .environmentName)
+                .onSubmit {
+                    if let firstRow = draftRows.first {
+                        focusedField = .keyName(firstRow.id)
+                    }
+                }
+            } else {
+                Button("+") {
+                    startDraftEnvironment(for: group)
+                }
+                .buttonStyle(.bordered)
             }
-            .buttonStyle(.bordered)
         }
     }
 
     private var keySection: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 14) {
-                if let detailError {
-                    Text(detailError)
-                        .font(.callout)
-                        .foregroundStyle(.red)
-                }
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(selectedEnvironment ?? "Keys")
+                    .font(.headline)
 
-                if visibleItems.isEmpty {
-                    ContentUnavailableView(
-                        "No Keys In This Environment",
-                        systemImage: "key.viewfinder",
-                        description: Text("Add a key with the Save button below.")
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 260)
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(Array(visibleItems.enumerated()), id: \.element.id) { index, item in
-                                keyRow(for: item, index: index)
-                            }
-                        }
-                        .padding(.vertical, 2)
+                Spacer()
+
+                if !isDraftEnvironmentSelected {
+                    Button("-") {
+                        removeCurrentEnvironmentDraftRow()
                     }
-                }
-
-                HStack {
-                    Spacer()
-
-                    Button("Edit") {
-                        if let focusedItem {
-                            itemBeingEdited = focusedItem
-                        }
-                    }
-                    .disabled(focusedItem == nil)
+                    .disabled(currentEnvironmentDraftRows.isEmpty)
                     .buttonStyle(.bordered)
 
-                    Button("Save") {
-                        isShowingAddSheet = true
+                    Button("+") {
+                        addCurrentEnvironmentDraftRow()
                     }
+                    .buttonStyle(.bordered)
+                }
+            }
+
+            if let detailError {
+                Text(detailError)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+
+            if isDraftEnvironmentSelected, let group = selectedGroup {
+                draftEnvironmentEditor(for: group)
+            } else if visibleItems.isEmpty, currentEnvironmentDraftRows.isEmpty {
+                ContentUnavailableView(
+                    "No Keys In This Environment",
+                    systemImage: "key.viewfinder",
+                    description: Text("Use + to add one or more keys inline.")
+                )
+                .frame(maxWidth: .infinity, minHeight: 260)
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color(nsColor: .controlBackgroundColor))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                )
+            } else {
+                VStack(alignment: .leading, spacing: 14) {
+                    if !visibleItems.isEmpty {
+                        ScrollView {
+                            LazyVStack(spacing: 12) {
+                                ForEach(Array(visibleItems.enumerated()), id: \.element.id) { index, item in
+                                    keyRow(for: item, index: index)
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
+
+                    if !currentEnvironmentDraftRows.isEmpty {
+                        currentEnvironmentDraftEditor
+                    }
+                }
+            }
+
+            HStack {
+                Spacer()
+
+                if !isDraftEnvironmentSelected, !visibleItems.isEmpty {
+                    if isEditingKeys {
+                        Button("Cancel") {
+                            cancelEditingKeys()
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("Save") {
+                            saveEditedKeys()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        Button("Edit") {
+                            startEditingKeys()
+                        }
+                        .disabled(!appState.unlockManager.isUnlocked)
+                        .buttonStyle(.bordered)
+                    }
+                }
+
+                if !isEditingKeys {
+                    Button(isDraftEnvironmentSelected ? "Save Environment" : "Save") {
+                        if let group = selectedGroup, isDraftEnvironmentSelected {
+                            saveDraftEnvironment(for: group)
+                        } else if let group = selectedGroup {
+                            saveCurrentEnvironmentDraftRows(for: group)
+                        }
+                    }
+                    .disabled(!isDraftEnvironmentSelected && currentEnvironmentDraftRows.isEmpty)
                     .buttonStyle(.borderedProminent)
                 }
             }
-        } label: {
-            Text(selectedEnvironment ?? "Keys")
-                .font(.headline)
+        }
+    }
+
+    private var newPlatformEditor: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("New Platform")
+                .font(.largeTitle)
+                .fontWeight(.semibold)
+
+            VStack(alignment: .leading, spacing: 14) {
+                editableField(
+                    title: "Platform Name",
+                    text: $draftPlatformName,
+                    tint: Color.orange.opacity(0.14),
+                    border: Color.orange.opacity(0.40)
+                )
+                .focused($focusedField, equals: .platformName)
+
+                editableField(
+                    title: "Environment",
+                    text: $draftPlatformEnvironment,
+                    tint: Color(nsColor: .controlBackgroundColor),
+                    border: Color(nsColor: .separatorColor)
+                )
+            }
+
+            HStack {
+                Text("Keys")
+                    .font(.headline)
+
+                Spacer()
+
+                Button("-") {
+                    guard draftPlatformRows.count > 1 else { return }
+                    draftPlatformRows.removeLast()
+                }
+                .disabled(draftPlatformRows.count <= 1)
+                .buttonStyle(.bordered)
+
+                Button("+") {
+                    let newRow = DraftKeyRow()
+                    draftPlatformRows.append(newRow)
+                    DispatchQueue.main.async {
+                        focusedField = .keyName(newRow.id)
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+
+            LazyVStack(spacing: 12) {
+                ForEach($draftPlatformRows) { $row in
+                    draftKeyRowEditor(row: $row)
+                }
+            }
+
+            if let detailError {
+                Text(detailError)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
+
+            HStack {
+                Spacer()
+
+                Button("Cancel") {
+                    cancelCreatingPlatform()
+                }
+                .buttonStyle(.bordered)
+
+                Button("Create Platform") {
+                    saveNewPlatform()
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+    }
+
+    private func startCreatingPlatform() {
+        isCreatingPlatform = true
+        draftPlatformName = ""
+        draftPlatformEnvironment = "Production"
+        draftPlatformRows = [DraftKeyRow()]
+        detailError = nil
+
+        DispatchQueue.main.async {
+            focusedField = .platformName
+        }
+    }
+
+    private func cancelCreatingPlatform() {
+        isCreatingPlatform = false
+        draftPlatformName = ""
+        draftPlatformEnvironment = ""
+        draftPlatformRows = [DraftKeyRow()]
+        detailError = nil
+    }
+
+    private func saveNewPlatform() {
+        let platformName = draftPlatformName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !platformName.isEmpty else {
+            detailError = "Platform name is required."
+            focusedField = .platformName
+            return
+        }
+
+        let environment = draftPlatformEnvironment.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !environment.isEmpty else {
+            detailError = "Environment is required."
+            return
+        }
+
+        let populatedRows = draftPlatformRows.filter {
+            !$0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
+        guard !populatedRows.isEmpty else {
+            detailError = "Add at least one key and value."
+            return
+        }
+
+        if populatedRows.contains(where: {
+            $0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            $0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) {
+            detailError = "Every row needs both a key name and value."
+            return
+        }
+
+        do {
+            for row in populatedRows {
+                try appState.saveManualDraft(
+                    CaptureDraft(
+                        providerSlug: nil,
+                        providerDisplayName: platformName,
+                        keyName: row.keyName.trimmingCharacters(in: .whitespacesAndNewlines),
+                        apiKey: row.value.trimmingCharacters(in: .whitespacesAndNewlines),
+                        platformURL: "",
+                        sourceURL: "",
+                        pageTitle: platformName,
+                        notes: nil,
+                        environment: environment,
+                        capturedAt: Date()
+                    )
+                )
+            }
+
+            let identity = platformName.lowercased()
+            isCreatingPlatform = false
+            draftPlatformName = ""
+            draftPlatformEnvironment = ""
+            draftPlatformRows = [DraftKeyRow()]
+            detailError = nil
+            selectedProviderIdentity = identity
+            selectedEnvironmentName = EnvironmentPreset.canonicalName(for: environment)
+            synchronizeSelection()
+        } catch {
+            detailError = error.localizedDescription
         }
     }
 
     private func keyRow(for item: VaultItemRecord, index: Int) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Key name")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if isEditingKeys {
+                editableField(
+                    title: "Key name",
+                    text: Binding(
+                        get: { editedKeyNames[item.id] ?? keyLabel(for: item, index: index) },
+                        set: { editedKeyNames[item.id] = $0 }
+                    ),
+                    tint: Color.orange.opacity(0.14),
+                    border: Color.orange.opacity(0.40)
+                )
 
-            Text(keyLabel(for: item, index: index))
-                .font(.headline)
-                .textSelection(.enabled)
+                editableField(
+                    title: "Value",
+                    text: Binding(
+                        get: { editedValues[item.id] ?? revealedSecrets[item.id] ?? "" },
+                        set: { editedValues[item.id] = $0 }
+                    ),
+                    tint: Color.blue.opacity(0.10),
+                    border: Color.blue.opacity(0.28),
+                    isMonospaced: true
+                )
+            } else {
+                highlightedField(
+                    title: "Key name",
+                    value: keyLabel(for: item, index: index),
+                    tint: Color.orange.opacity(0.16),
+                    border: Color.orange.opacity(0.40),
+                    font: .headline
+                )
 
-            Divider()
-
-            Text("Value")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Text(displayValue(for: item))
-                .font(.system(.body, design: .monospaced))
-                .textSelection(.enabled)
+                highlightedField(
+                    title: "Value",
+                    value: displayValue(for: item),
+                    tint: Color.blue.opacity(0.10),
+                    border: Color.blue.opacity(0.28),
+                    font: .system(.body, design: .monospaced)
+                )
+            }
 
             HStack(spacing: 10) {
                 Button("Copy") {
@@ -426,6 +750,152 @@ struct RootView: View {
         .onTapGesture {
             selectedID = item.id
             detailError = nil
+        }
+    }
+
+    private var currentEnvironmentDraftEditor: some View {
+        LazyVStack(spacing: 12) {
+            ForEach($currentEnvironmentDraftRows) { $row in
+                draftKeyRowEditor(row: $row)
+            }
+        }
+    }
+
+    private func draftEnvironmentEditor(for group: ProviderGroup) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Keys and Values")
+                    .font(.headline)
+
+                Spacer()
+
+                Button("-") {
+                    removeDraftRow()
+                }
+                .disabled(draftRows.count <= 1)
+                .buttonStyle(.bordered)
+
+                Button("+") {
+                    addDraftRow()
+                }
+                .buttonStyle(.bordered)
+            }
+
+            ForEach($draftRows) { $row in
+                draftKeyRowEditor(row: $row)
+            }
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
+    }
+
+    private func metadataRow(label: String, value: String) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Text(label)
+                .font(.callout.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 110, alignment: .leading)
+
+            Text(value)
+                .font(.callout)
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func highlightedField(title: String, value: String, tint: Color, border: Color, font: Font) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text(value)
+                .font(font)
+                .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(tint)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(border, lineWidth: 1)
+                )
+                .textSelection(.enabled)
+        }
+    }
+
+    private func editableField(title: String, text: Binding<String>, tint: Color, border: Color, isMonospaced: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            TextField("", text: text)
+                .font(isMonospaced ? .system(.body, design: .monospaced) : .body)
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(tint)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(border, lineWidth: 1)
+                )
+        }
+    }
+
+    private func startEditingKeys() {
+        editedKeyNames.removeAll()
+        editedValues.removeAll()
+        for item in visibleItems {
+            editedKeyNames[item.id] = keyLabel(for: item, index: 0)
+            editedValues[item.id] = revealedSecrets[item.id] ?? ""
+        }
+        isEditingKeys = true
+        detailError = nil
+    }
+
+    private func cancelEditingKeys() {
+        isEditingKeys = false
+        editedKeyNames.removeAll()
+        editedValues.removeAll()
+        detailError = nil
+    }
+
+    private func saveEditedKeys() {
+        do {
+            for item in visibleItems {
+                if let newName = editedKeyNames[item.id] {
+                    let currentName = item.keyName ?? ""
+                    if newName != currentName {
+                        try appState.updateKeyName(for: item, newName: newName)
+                    }
+                }
+                if let newValue = editedValues[item.id],
+                   let originalValue = revealedSecrets[item.id],
+                   newValue != originalValue {
+                    try appState.updateSecret(for: item, newValue: newValue)
+                }
+            }
+            isEditingKeys = false
+            editedKeyNames.removeAll()
+            editedValues.removeAll()
+            detailError = nil
+            refreshVisibleSecrets()
+        } catch {
+            detailError = error.localizedDescription
         }
     }
 
@@ -506,11 +976,184 @@ struct RootView: View {
         appState.postMessage("Copied platform summary.")
     }
 
+    private func startDraftEnvironment(for group: ProviderGroup) {
+        isCreatingEnvironment = true
+        draftEnvironmentName = ""
+        draftRows = [DraftKeyRow()]
+        selectedProviderIdentity = group.id
+        selectedEnvironmentName = Self.draftEnvironmentSelectionID
+        selectedID = nil
+        detailError = nil
+
+        DispatchQueue.main.async {
+            focusedField = .environmentName
+        }
+    }
+
+    private func cancelDraftEnvironment() {
+        isCreatingEnvironment = false
+        draftEnvironmentName = ""
+        draftRows = [DraftKeyRow()]
+        focusedField = nil
+        detailError = nil
+        selectedEnvironmentName = selectedGroup?.environments.first
+        selectedID = visibleItems.first?.id
+    }
+
+    private func addDraftRow() {
+        let newRow = DraftKeyRow()
+        draftRows.append(newRow)
+        DispatchQueue.main.async {
+            focusedField = .keyName(newRow.id)
+        }
+    }
+
+    private func removeDraftRow() {
+        guard draftRows.count > 1 else { return }
+        draftRows.removeLast()
+    }
+
+    private func addCurrentEnvironmentDraftRow() {
+        let newRow = DraftKeyRow()
+        currentEnvironmentDraftRows.append(newRow)
+        detailError = nil
+
+        DispatchQueue.main.async {
+            focusedField = .keyName(newRow.id)
+        }
+    }
+
+    private func removeCurrentEnvironmentDraftRow() {
+        guard currentEnvironmentDraftRows.count > 1 else {
+            currentEnvironmentDraftRows.removeAll()
+            detailError = nil
+            return
+        }
+
+        currentEnvironmentDraftRows.removeLast()
+    }
+
+    private func saveDraftEnvironment(for group: ProviderGroup) {
+        let environmentName = draftEnvironmentName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !environmentName.isEmpty else {
+            detailError = "Give the new tab an environment name."
+            focusedField = .environmentName
+            return
+        }
+
+        let populatedRows = draftRows.filter {
+            !$0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
+        guard !populatedRows.isEmpty else {
+            detailError = "Add at least one key and value."
+            return
+        }
+
+        if populatedRows.contains(where: {
+            $0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            $0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) {
+            detailError = "Every row needs both a key name and value."
+            return
+        }
+
+        let sourceItem = focusedItem ?? group.items.first
+        let canonicalEnvironment = EnvironmentPreset.canonicalName(for: environmentName)
+
+        do {
+            for row in populatedRows {
+                try appState.saveManualDraft(
+                    CaptureDraft(
+                        providerSlug: sourceItem?.providerSlug,
+                        providerDisplayName: group.displayName,
+                        keyName: row.keyName.trimmingCharacters(in: .whitespacesAndNewlines),
+                        apiKey: row.value.trimmingCharacters(in: .whitespacesAndNewlines),
+                        platformURL: sourceItem?.platformURL ?? "",
+                        sourceURL: sourceItem?.sourceURL ?? (sourceItem?.platformURL ?? ""),
+                        pageTitle: sourceItem?.pageTitle ?? group.displayName,
+                        notes: sourceItem?.notes,
+                        environment: canonicalEnvironment,
+                        capturedAt: Date()
+                    )
+                )
+            }
+
+            isCreatingEnvironment = false
+            draftEnvironmentName = ""
+            draftRows = [DraftKeyRow()]
+            focusedField = nil
+            detailError = nil
+            selectedEnvironmentName = canonicalEnvironment
+            synchronizeSelection()
+        } catch {
+            detailError = error.localizedDescription
+        }
+    }
+
+    private func saveCurrentEnvironmentDraftRows(for group: ProviderGroup) {
+        guard let selectedEnvironment else {
+            detailError = "Select an environment before saving keys."
+            return
+        }
+
+        let populatedRows = currentEnvironmentDraftRows.filter {
+            !$0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
+        guard !populatedRows.isEmpty else {
+            detailError = "Add at least one key and value."
+            return
+        }
+
+        if populatedRows.contains(where: {
+            $0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            $0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) {
+            detailError = "Every row needs both a key name and value."
+            return
+        }
+
+        let sourceItem = focusedItem ?? visibleItems.first ?? group.items.first
+
+        do {
+            for row in populatedRows {
+                try appState.saveManualDraft(
+                    CaptureDraft(
+                        providerSlug: sourceItem?.providerSlug,
+                        providerDisplayName: group.displayName,
+                        keyName: row.keyName.trimmingCharacters(in: .whitespacesAndNewlines),
+                        apiKey: row.value.trimmingCharacters(in: .whitespacesAndNewlines),
+                        platformURL: sourceItem?.platformURL ?? "",
+                        sourceURL: sourceItem?.sourceURL ?? (sourceItem?.platformURL ?? ""),
+                        pageTitle: sourceItem?.pageTitle ?? group.displayName,
+                        notes: sourceItem?.notes,
+                        environment: selectedEnvironment,
+                        capturedAt: Date()
+                    )
+                )
+            }
+
+            currentEnvironmentDraftRows.removeAll()
+            detailError = nil
+            synchronizeSelection()
+        } catch {
+            detailError = error.localizedDescription
+        }
+    }
+
     private func synchronizeSelection() {
         if let group = selectedGroup {
             selectedProviderIdentity = group.id
         } else {
             selectedProviderIdentity = nil
+        }
+
+        if isDraftEnvironmentSelected {
+            selectedID = nil
+            return
         }
 
         if let selectedEnvironment,
@@ -528,7 +1171,41 @@ struct RootView: View {
         selectedID = visibleItems.first?.id
     }
 
+    private func resetCurrentEnvironmentDraftRows() {
+        currentEnvironmentDraftRows.removeAll()
+        focusedField = nil
+    }
+
     private func usageCount(for group: ProviderGroup) -> Int {
         usageLogs.filter { $0.sourceProviderIdentity == group.id }.count
+    }
+
+    private func draftKeyRowEditor(row: Binding<DraftKeyRow>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            editableField(
+                title: "Key name",
+                text: row.keyName,
+                tint: Color.orange.opacity(0.14),
+                border: Color.orange.opacity(0.40)
+            )
+            .focused($focusedField, equals: .keyName(row.wrappedValue.id))
+
+            editableField(
+                title: "Value",
+                text: row.value,
+                tint: Color.blue.opacity(0.10),
+                border: Color.blue.opacity(0.28),
+                isMonospaced: true
+            )
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+        )
     }
 }

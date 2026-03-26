@@ -204,6 +204,33 @@ final class VaultService {
         try? modelContext.save()
     }
 
+    func updateSecret(for item: VaultItemRecord, newValue: String) throws {
+        guard unlockManager.isUnlocked else {
+            throw VaultError.locked
+        }
+
+        let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw VaultError.validation("Key value cannot be empty.")
+        }
+
+        try keychainService.save(secret: trimmed, account: item.keychainAccount)
+        item.keyFingerprint = fingerprint(for: trimmed)
+        item.updatedAt = Date()
+        try modelContext.save()
+    }
+
+    func updateKeyName(for item: VaultItemRecord, newName: String) throws {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw VaultError.validation("Key name cannot be empty.")
+        }
+
+        item.keyName = trimmed
+        item.updatedAt = Date()
+        try modelContext.save()
+    }
+
     func updateMetadata(
         for item: VaultItemRecord,
         providerDisplayName: String,

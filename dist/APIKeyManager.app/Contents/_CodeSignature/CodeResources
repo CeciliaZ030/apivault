@@ -6,19 +6,19 @@
 	<dict>
 		<key>Resources/manifest.json</key>
 		<data>
-		ZRhR7yPzD6eG2zt8xVnf4+vX9q8=
+		BaaqzbCGX8i3+49Qn+hXIaTn1wQ=
 		</data>
 		<key>Resources/popup.css</key>
 		<data>
-		VqXs4NVLuS1d2s7I/5la+XnfTyU=
+		E8sMBZQphO4iFzLBdR9GQMq8Aa4=
 		</data>
 		<key>Resources/popup.html</key>
 		<data>
-		kwaWxZkMGn1nXd29n3Qv8WGkaLU=
+		O0TC/dNBUcsfW6XMqbtt6pjhOOw=
 		</data>
 		<key>Resources/popup.js</key>
 		<data>
-		UsKUousRpTDqPmneq005MFscKXw=
+		S1xUAFcD6ke01lAFEGuqfOvee3c=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -27,10 +27,10 @@
 		<dict>
 			<key>cdhash</key>
 			<data>
-			8hw2apnceYfRr/SQNIQTZo7X7hY=
+			fLxprmggEiWYXkyOvw8x9P1ZYwo=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"f21c366a99dc7987d1aff490348413668ed7ee16"</string>
+			<string>cdhash H"7cbc69ae68201225985e4c8ebf0f31f4fd59630a"</string>
 		</dict>
 		<key>MacOS/__preview.dylib</key>
 		<dict>
@@ -54,28 +54,28 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Syjkolfre3B9AIlP4QxL/CL0fYobE79OpxtSMHKdgRw=
+			4le/PsQnd27yPTdaJFTOT6cPD6P07s4duAqYkzlvmhU=
 			</data>
 		</dict>
 		<key>Resources/popup.css</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			bp/ioPvf02JyVM4M1ohDMzjke1+82yRSNbTdcoUXJaQ=
+			1mLmkNA5o+tIRpTdejzAJ7PDYPuLtNbrTBiqQUfMDJI=
 			</data>
 		</dict>
 		<key>Resources/popup.html</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			BX1tAtBcApPEuKUVdCfT0eyu4IiSnB61UlhLnp4gyrc=
+			TkNzZUzX5Hagd3m0r+hMk1/rGePPR8Gkh9o17ShYDv0=
 			</data>
 		</dict>
 		<key>Resources/popup.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			qC26tjgjsqLRSj2oQ6sg6nnxxPZRwVyXt2X4E5gWj5Y=
+			DTlSFJrlO2unTnTioxeb7kLtE9ZwZhGT4paEH4aykFo=
 			</data>
 		</dict>
 	</dict>

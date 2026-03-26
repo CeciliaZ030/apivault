@@ -8,9 +8,11 @@
     "tabs",
     "nativeMessaging"
   ],
+  "host_permissions": [
+    "http://localhost:38173/*"
+  ],
   "action": {
     "default_title": "API Key Manager",
     "default_popup": "popup.html"
   }
 }
-

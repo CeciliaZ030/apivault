@@ -2,21 +2,22 @@ const state = {
   activeTab: {
     title: "",
     url: "",
-    siteName: ""
+    siteName: "",
+    host: ""
   },
   bridgeMode: "unknown",
   savedPlatforms: [],
   keyRowCount: 0,
-  usageRowCount: 0
+  usageRowCount: 0,
+  restoredDraft: null
 };
 
 const refs = {};
+const DRAFT_STORAGE_KEY = "api-key-manager-popup-drafts-v1";
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheRefs();
   bindEvents();
-  addKeyRow();
-  addUsageRow();
   initialize().catch((error) => {
     setStatus(error.message, "error");
   });
@@ -39,8 +40,10 @@ function cacheRefs() {
   refs.customEnvironmentInput = document.getElementById("customEnvironmentInput");
   refs.keyRows = document.getElementById("keyRows");
   refs.keyNotesInput = document.getElementById("keyNotesInput");
+  refs.removeKeyRowButton = document.getElementById("removeKeyRowButton");
   refs.addKeyRowButton = document.getElementById("addKeyRowButton");
   refs.openAppButton = document.getElementById("openAppButton");
+  refs.clearKeysButton = document.getElementById("clearKeysButton");
   refs.saveKeysButton = document.getElementById("saveKeysButton");
   refs.usageForm = document.getElementById("usageForm");
   refs.usagePlatformSelect = document.getElementById("usagePlatformSelect");
@@ -51,7 +54,9 @@ function cacheRefs() {
   refs.customUsageEnvironmentInput = document.getElementById("customUsageEnvironmentInput");
   refs.usageRows = document.getElementById("usageRows");
   refs.usageNotesInput = document.getElementById("usageNotesInput");
+  refs.removeUsageRowButton = document.getElementById("removeUsageRowButton");
   refs.addUsageRowButton = document.getElementById("addUsageRowButton");
+  refs.clearUsageButton = document.getElementById("clearUsageButton");
   refs.saveUsageButton = document.getElementById("saveUsageButton");
 }
 
@@ -59,13 +64,27 @@ function bindEvents() {
   refs.logKeyTab.addEventListener("click", () => switchTab("key"));
   refs.logUsageTab.addEventListener("click", () => switchTab("usage"));
   refs.environmentSelect.addEventListener("change", syncKeyEnvironmentVisibility);
-  refs.addKeyRowButton.addEventListener("click", addKeyRow);
+  refs.removeKeyRowButton.addEventListener("click", () => removeLastRow(refs.keyRows, () => addKeyRow()));
+  refs.addKeyRowButton.addEventListener("click", () => {
+    addKeyRow();
+    void persistDraft();
+  });
   refs.openAppButton.addEventListener("click", openDashboard);
+  refs.clearKeysButton.addEventListener("click", clearKeyDraft);
   refs.keyForm.addEventListener("submit", submitKeys);
+  refs.keyForm.addEventListener("input", handleDraftMutation);
+  refs.keyForm.addEventListener("change", handleDraftMutation);
   refs.usagePlatformSelect.addEventListener("change", syncUsagePlatformState);
   refs.usageEnvironmentSelect.addEventListener("change", syncUsageEnvironmentVisibility);
-  refs.addUsageRowButton.addEventListener("click", addUsageRow);
+  refs.removeUsageRowButton.addEventListener("click", () => removeLastRow(refs.usageRows, () => addUsageRow()));
+  refs.addUsageRowButton.addEventListener("click", () => {
+    addUsageRow();
+    void persistDraft();
+  });
+  refs.clearUsageButton.addEventListener("click", clearUsageDraft);
   refs.usageForm.addEventListener("submit", submitUsage);
+  refs.usageForm.addEventListener("input", handleDraftMutation);
+  refs.usageForm.addEventListener("change", handleDraftMutation);
 }
 
 async function initialize() {
@@ -73,6 +92,7 @@ async function initialize() {
   state.activeTab.title = tab?.title ?? "";
   state.activeTab.url = tab?.url ?? "";
   const host = extractHost(state.activeTab.url);
+  state.activeTab.host = host;
 
   refs.siteTitle.textContent = host || "API Key Manager";
   refs.siteSubtitle.textContent = state.activeTab.title || "Manual key and usage logger";
@@ -80,10 +100,8 @@ async function initialize() {
   state.activeTab.siteName = extractSiteName(state.activeTab.url);
 
   refs.currentURLInput.value = state.activeTab.url;
-  refs.pageTitleInput.placeholder = state.activeTab.title || "Example: Anthropic";
-  refs.platformURLInput.placeholder = state.activeTab.url || "Example: https://api.anthropic.com";
-
-  syncKeyEnvironmentVisibility();
+  restoreDefaults();
+  await restoreDraft();
 
   try {
     const response = await sendBridgeMessage({
@@ -105,11 +123,13 @@ async function initialize() {
 
     state.savedPlatforms = response.data?.savedPlatforms ?? [];
     populateUsagePlatformOptions(state.savedPlatforms);
+    applyRestoredUsageSelection();
     const unlockState = response.data?.unlockState ?? "locked";
     const bridgeLabel = state.bridgeMode === "localhost" ? "localhost fallback" : "native bridge";
     setStatus(`Connected via ${bridgeLabel}. Vault is ${unlockState}.`, "success");
   } catch (error) {
     populateUsagePlatformOptions([]);
+    applyRestoredUsageSelection();
     setStatus("Dashboard is not reachable. Open API Key Manager, then retry.", "error");
   }
 }
@@ -122,6 +142,7 @@ function switchTab(tabName) {
   refs.logUsageTab.classList.toggle("active", !isKeyTab);
   refs.logKeyTab.setAttribute("aria-selected", String(isKeyTab));
   refs.logUsageTab.setAttribute("aria-selected", String(!isKeyTab));
+  void persistDraft();
 }
 
 function extractHost(urlString) {
@@ -206,6 +227,10 @@ function appendOption(select, value, label) {
 }
 
 function addKeyRow() {
+  return createKeyRow();
+}
+
+function createKeyRow(initialValues = {}) {
   const defaultKeyName = deriveKeyName(state.activeTab.siteName);
   const row = document.createElement("div");
   row.className = "rowCard";
@@ -214,22 +239,25 @@ function addKeyRow() {
     <div class="rowCardGrid">
       <label>
         <span>Key Name</span>
-        <input class="keyNameInput" type="text" placeholder="${defaultKeyName}">
+        <input class="keyNameInput" type="text" placeholder="${defaultKeyName}" value="${escapeAttribute(initialValues.keyName ?? "")}">
       </label>
       <label>
         <span>Value</span>
-        <textarea class="keyValueInput" rows="3" placeholder="Paste key value"></textarea>
+        <textarea class="keyValueInput" rows="3" placeholder="Paste key value">${escapeHTML(initialValues.apiKey ?? "")}</textarea>
       </label>
     </div>
-    <button type="button" class="miniButton removeRowButton">-</button>
   `;
 
-  row.querySelector(".removeRowButton").addEventListener("click", () => removeRow(row, refs.keyRows, addKeyRow));
   refs.keyRows.appendChild(row);
   syncRemoveButtons(refs.keyRows);
+  return row;
 }
 
 function addUsageRow() {
+  return createUsageRow();
+}
+
+function createUsageRow(initialValues = {}) {
   const row = document.createElement("div");
   row.className = "rowCard";
   row.dataset.rowType = "usage";
@@ -237,44 +265,50 @@ function addUsageRow() {
     <div class="rowCardGrid">
       <label>
         <span>Usage</span>
-        <input class="usageLabelInput" type="text" placeholder="Example: ANTHROPIC_API_KEY">
+        <input class="usageLabelInput" type="text" placeholder="Example: ANTHROPIC_API_KEY" value="${escapeAttribute(initialValues.usage ?? "")}">
       </label>
       <label>
         <span>Used Site</span>
-        <input class="usedSiteInput" type="text" placeholder="Example: Github">
+        <input class="usedSiteInput" type="text" placeholder="Example: Github" value="${escapeAttribute(initialValues.usedSite ?? "")}">
       </label>
       <label>
         <span>Configuration Link</span>
-        <input class="configurationLinkInput" type="text" placeholder="Example: github.com/environment">
+        <input class="configurationLinkInput" type="text" placeholder="Example: github.com/environment" value="${escapeAttribute(initialValues.configurationLink ?? "")}">
       </label>
       <label>
         <span>Server IP</span>
-        <input class="serverIPInput" type="text" placeholder="Optional">
+        <input class="serverIPInput" type="text" placeholder="Optional" value="${escapeAttribute(initialValues.serverIP ?? "")}">
       </label>
     </div>
-    <button type="button" class="miniButton removeRowButton">-</button>
   `;
 
-  row.querySelector(".removeRowButton").addEventListener("click", () => removeRow(row, refs.usageRows, addUsageRow));
   refs.usageRows.appendChild(row);
   syncRemoveButtons(refs.usageRows);
+  return row;
 }
 
-function removeRow(row, container, addBack) {
-  row.remove();
+function removeLastRow(container, addBack) {
+  const lastRow = container.lastElementChild;
+  if (lastRow) {
+    lastRow.remove();
+  }
+
   if (container.children.length === 0) {
     addBack();
-  } else {
-    syncRemoveButtons(container);
   }
+
+  syncRemoveButtons(container);
+  void persistDraft();
 }
 
 function syncRemoveButtons(container) {
-  const buttons = container.querySelectorAll(".removeRowButton");
-  const disable = buttons.length <= 1;
-  buttons.forEach((button) => {
-    button.disabled = disable;
-  });
+  const disable = container.children.length <= 1;
+  if (container === refs.keyRows) {
+    refs.removeKeyRowButton.disabled = disable;
+  }
+  if (container === refs.usageRows) {
+    refs.removeUsageRowButton.disabled = disable;
+  }
 }
 
 async function openDashboard() {
@@ -346,8 +380,8 @@ async function submitKeys(event) {
       }
     }
 
-    clearKeyRows();
-    refs.keyNotesInput.value = "";
+    clearKeyFormFields();
+    await persistDraft();
     setStatus(`Saved ${drafts.length} key${drafts.length === 1 ? "" : "s"}.`, "success");
     await refreshPlatforms();
   } catch (error) {
@@ -426,8 +460,8 @@ async function submitUsage(event) {
       }
     }
 
-    clearUsageRows();
-    refs.usageNotesInput.value = "";
+    clearUsageFormFields();
+    await persistDraft();
     setStatus(`Logged ${drafts.length} usage entr${drafts.length === 1 ? "y" : "ies"}.`, "success");
   } catch (error) {
     setStatus(error.message, "error");
@@ -448,6 +482,41 @@ function clearUsageRows() {
   addUsageRow();
 }
 
+function clearKeyFormFields() {
+  refs.pageTitleInput.value = "";
+  refs.platformURLInput.value = "";
+  refs.environmentSelect.value = "production";
+  refs.customEnvironmentInput.value = "";
+  refs.keyNotesInput.value = "";
+  syncKeyEnvironmentVisibility();
+  clearKeyRows();
+}
+
+function clearUsageFormFields() {
+  refs.customUsagePlatformInput.value = "";
+  refs.customUsageEnvironmentInput.value = "";
+  refs.usageNotesInput.value = "";
+  refs.usagePlatformSelect.value = state.savedPlatforms[0]?.identity ?? "";
+  syncUsagePlatformState();
+  clearUsageRows();
+}
+
+async function clearKeyDraft() {
+  clearKeyFormFields();
+  await persistDraft();
+  setStatus("Cleared key draft.", "success");
+}
+
+async function clearUsageDraft() {
+  clearUsageFormFields();
+  await persistDraft();
+  setStatus("Cleared usage draft.", "success");
+}
+
+function handleDraftMutation() {
+  void persistDraft();
+}
+
 async function refreshPlatforms() {
   try {
     const response = await sendBridgeMessage({
@@ -464,6 +533,7 @@ async function refreshPlatforms() {
     if (response.ok) {
       state.savedPlatforms = response.data?.savedPlatforms ?? [];
       populateUsagePlatformOptions(state.savedPlatforms);
+      applyRestoredUsageSelection();
     }
   } catch {
     // Ignore refresh failures and keep the current popup state.
@@ -486,6 +556,154 @@ function setStatus(message, kind) {
   }
 }
 
+function restoreDefaults() {
+  refs.pageTitleInput.placeholder = state.activeTab.title || "Example: Anthropic";
+  refs.platformURLInput.placeholder = state.activeTab.url || "Example: https://api.anthropic.com";
+  refs.currentURLInput.value = state.activeTab.url;
+  refs.environmentSelect.value = "production";
+  syncKeyEnvironmentVisibility();
+  if (!refs.keyRows.children.length) {
+    addKeyRow();
+  }
+  if (!refs.usageRows.children.length) {
+    addUsageRow();
+  }
+}
+
+function draftScopeKey() {
+  return state.activeTab.host || "_global";
+}
+
+async function restoreDraft() {
+  let storedDrafts = {};
+  try {
+    const result = await browser.storage.local.get(DRAFT_STORAGE_KEY);
+    storedDrafts = result[DRAFT_STORAGE_KEY] ?? {};
+  } catch {
+    restoreDefaults();
+    return;
+  }
+
+  const draft = storedDrafts[draftScopeKey()];
+  if (!draft) {
+    restoreDefaults();
+    return;
+  }
+
+  state.restoredDraft = draft;
+  applyDraft(draft);
+}
+
+function applyDraft(draft) {
+  restoreDefaults();
+
+  if (draft.activeTab === "usage") {
+    switchTab("usage");
+  } else {
+    switchTab("key");
+  }
+
+  const keyForm = draft.keyForm ?? {};
+  refs.pageTitleInput.value = keyForm.pageTitle ?? "";
+  refs.platformURLInput.value = keyForm.platformURL ?? "";
+  refs.environmentSelect.value = keyForm.environment ?? "production";
+  refs.customEnvironmentInput.value = keyForm.customEnvironment ?? "";
+  refs.keyNotesInput.value = keyForm.notes ?? "";
+  syncKeyEnvironmentVisibility();
+
+  refs.keyRows.innerHTML = "";
+  const keyRows = Array.isArray(keyForm.rows) && keyForm.rows.length ? keyForm.rows : [{}];
+  keyRows.forEach((row) => createKeyRow(row));
+
+  const usageForm = draft.usageForm ?? {};
+  refs.customUsagePlatformInput.value = usageForm.customPlatform ?? "";
+  refs.customUsageEnvironmentInput.value = usageForm.customEnvironment ?? "";
+  refs.usageNotesInput.value = usageForm.notes ?? "";
+  refs.usageRows.innerHTML = "";
+  const usageRows = Array.isArray(usageForm.rows) && usageForm.rows.length ? usageForm.rows : [{}];
+  usageRows.forEach((row) => createUsageRow(row));
+
+  if (usageForm.platformIdentity) {
+    refs.usagePlatformSelect.value = usageForm.platformIdentity;
+  }
+  syncUsagePlatformState();
+  if (usageForm.environment) {
+    refs.usageEnvironmentSelect.value = usageForm.environment;
+  }
+  syncUsageEnvironmentVisibility();
+}
+
+function applyRestoredUsageSelection() {
+  const usageForm = state.restoredDraft?.usageForm;
+  if (!usageForm) {
+    return;
+  }
+
+  if (usageForm.platformIdentity) {
+    refs.usagePlatformSelect.value = usageForm.platformIdentity;
+  }
+  syncUsagePlatformState();
+
+  if (usageForm.environment) {
+    refs.usageEnvironmentSelect.value = usageForm.environment;
+  }
+  refs.customUsagePlatformInput.value = usageForm.customPlatform ?? refs.customUsagePlatformInput.value;
+  refs.customUsageEnvironmentInput.value = usageForm.customEnvironment ?? refs.customUsageEnvironmentInput.value;
+  syncUsageEnvironmentVisibility();
+}
+
+function collectDraft() {
+  return {
+    activeTab: refs.logUsageTab.classList.contains("active") ? "usage" : "key",
+    keyForm: {
+      pageTitle: refs.pageTitleInput.value,
+      platformURL: refs.platformURLInput.value,
+      environment: refs.environmentSelect.value,
+      customEnvironment: refs.customEnvironmentInput.value,
+      notes: refs.keyNotesInput.value,
+      rows: Array.from(refs.keyRows.querySelectorAll(".rowCard")).map((row) => ({
+        keyName: row.querySelector(".keyNameInput").value,
+        apiKey: row.querySelector(".keyValueInput").value
+      }))
+    },
+    usageForm: {
+      platformIdentity: refs.usagePlatformSelect.value,
+      customPlatform: refs.customUsagePlatformInput.value,
+      environment: refs.usageEnvironmentSelect.value,
+      customEnvironment: refs.customUsageEnvironmentInput.value,
+      notes: refs.usageNotesInput.value,
+      rows: Array.from(refs.usageRows.querySelectorAll(".rowCard")).map((row) => ({
+        usage: row.querySelector(".usageLabelInput").value,
+        usedSite: row.querySelector(".usedSiteInput").value,
+        configurationLink: row.querySelector(".configurationLinkInput").value,
+        serverIP: row.querySelector(".serverIPInput").value
+      }))
+    }
+  };
+}
+
+async function persistDraft() {
+  try {
+    const result = await browser.storage.local.get(DRAFT_STORAGE_KEY);
+    const drafts = result[DRAFT_STORAGE_KEY] ?? {};
+    drafts[draftScopeKey()] = collectDraft();
+    await browser.storage.local.set({ [DRAFT_STORAGE_KEY]: drafts });
+  } catch {
+    // Ignore storage failures in the popup.
+  }
+}
+
+function escapeHTML(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function escapeAttribute(value) {
+  return escapeHTML(value).replaceAll("\"", "&quot;");
+}
+
 async function sendNativeMessage(message) {
   state.bridgeMode = "native";
   return browser.runtime.sendNativeMessage(message);
@@ -493,13 +711,15 @@ async function sendNativeMessage(message) {
 
 async function sendBridgeMessage(message) {
   try {
-    return await sendNativeMessage(message);
-  } catch (nativeError) {
-    return sendLocalhostBridge(message, nativeError);
+    return await sendLocalhostBridge(message);
+  } catch (localhostError) {
+    return sendNativeMessage(message).catch(() => {
+      throw localhostError;
+    });
   }
 }
 
-async function sendLocalhostBridge(message, nativeError) {
+async function sendLocalhostBridge(message) {
   state.bridgeMode = "localhost";
 
   const response = await fetch("http://localhost:38173/bridge", {
@@ -509,7 +729,7 @@ async function sendLocalhostBridge(message, nativeError) {
     },
     body: JSON.stringify(message)
   }).catch(() => {
-    throw nativeError ?? new Error("Dashboard is not reachable. Open API Key Manager, then retry.");
+    throw new Error("Dashboard is not reachable. Open API Key Manager, then retry.");
   });
 
   if (!response.ok) {

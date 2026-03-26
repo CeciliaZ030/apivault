@@ -14,7 +14,6 @@
 		24B8AD3778FC3FBBBBE6B142 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = A47182243C41F013A2B8CA65 /* popup.js */; };
 		258C8C75C14F73E1C8249D4E /* LocalBridgeServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB91D6F6FEB611E0C31A673E /* LocalBridgeServer.swift */; };
 		281FA2B21A36E7C42B758926 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 9CE6BB89FFBF693B3F111FAE /* manifest.json */; };
-		311024BC8393CC1B69F77147 /* EditMetadataSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A484452B6F4E87F51B2C6380 /* EditMetadataSheet.swift */; };
 		343BAFD2D5776E043FD1637F /* InstructionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A967D358326DA7993FCE710 /* InstructionsView.swift */; };
 		3F732209D19F2AFE6C97C724 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA8CD7071CFD526788842830 /* KeychainService.swift */; };
 		681F7B3BF16FBDA4B7537443 /* VaultService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E8EE2CADD93412195D5B08F /* VaultService.swift */; };
@@ -28,7 +27,6 @@
 		B903A9279F3AE53E3DE4AE3D /* LoopbackBridgeClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AB54D617948192CD7D9D11 /* LoopbackBridgeClient.swift */; };
 		C6710C7716025517ECA6D08A /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D4013D0E7F8A60704F8DC068 /* popup.css */; };
 		CA3CA1DAE1D0241964B5581A /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9410A092B689B8C7F472A268 /* AppConstants.swift */; };
-		CCD424658DFEFB0D99C88462 /* AddKeySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBB09203F1D77DB8698D0CFD /* AddKeySheet.swift */; };
 		D12B1B1AE5663607179EB33F /* UsageLogRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2F89106C6C3C040E48A241F /* UsageLogRecord.swift */; };
 		DB0A29EE9381333FE0C32771 /* GlassmorphismStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E36D516DCEDFBDF4A2445E21 /* GlassmorphismStyle.swift */; };
 		E056F15AAD26B898EDB5C841 /* APIKeyManagerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB6425703294C5563C060E5 /* APIKeyManagerApp.swift */; };
@@ -73,7 +71,6 @@
 		9410A092B689B8C7F472A268 /* AppConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConstants.swift; sourceTree = "<group>"; };
 		9CE6BB89FFBF693B3F111FAE /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
 		A47182243C41F013A2B8CA65 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
-		A484452B6F4E87F51B2C6380 /* EditMetadataSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditMetadataSheet.swift; sourceTree = "<group>"; };
 		AA8CD7071CFD526788842830 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
 		AABBA53ACA6CDF34E518B3CA /* APIKeyManagerApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = APIKeyManagerApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB91D6F6FEB611E0C31A673E /* LocalBridgeServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalBridgeServer.swift; sourceTree = "<group>"; };
@@ -82,7 +79,6 @@
 		C2F89106C6C3C040E48A241F /* UsageLogRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLogRecord.swift; sourceTree = "<group>"; };
 		D3AB54D617948192CD7D9D11 /* LoopbackBridgeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopbackBridgeClient.swift; sourceTree = "<group>"; };
 		D4013D0E7F8A60704F8DC068 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
-		DBB09203F1D77DB8698D0CFD /* AddKeySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddKeySheet.swift; sourceTree = "<group>"; };
 		E36D516DCEDFBDF4A2445E21 /* GlassmorphismStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassmorphismStyle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -119,8 +115,6 @@
 		6700974F7FB04E7B8DE29A8E /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				DBB09203F1D77DB8698D0CFD /* AddKeySheet.swift */,
-				A484452B6F4E87F51B2C6380 /* EditMetadataSheet.swift */,
 				E36D516DCEDFBDF4A2445E21 /* GlassmorphismStyle.swift */,
 				4A967D358326DA7993FCE710 /* InstructionsView.swift */,
 				86E4049CB98B31E4CD81FB22 /* RootView.swift */,
@@ -294,11 +288,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				E056F15AAD26B898EDB5C841 /* APIKeyManagerApp.swift in Sources */,
-				CCD424658DFEFB0D99C88462 /* AddKeySheet.swift in Sources */,
 				CA3CA1DAE1D0241964B5581A /* AppConstants.swift in Sources */,
 				E84D694769E2FBE50E6FFA2E /* AppState.swift in Sources */,
 				73BF756382C4ABB97FE278C8 /* BridgeModels.swift in Sources */,
-				311024BC8393CC1B69F77147 /* EditMetadataSheet.swift in Sources */,
+				F1A2B3C4D5E6F78901234567 /* EditMetadataView.swift in Sources */,
 				DB0A29EE9381333FE0C32771 /* GlassmorphismStyle.swift in Sources */,
 				343BAFD2D5776E043FD1637F /* InstructionsView.swift in Sources */,
 				3F732209D19F2AFE6C97C724 /* KeychainService.swift in Sources */,
