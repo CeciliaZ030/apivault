@@ -64,10 +64,20 @@ struct UsageLogDraft: Codable {
     let loggedAt: Date
 }
 
+struct UsageProfile: Codable, Hashable {
+    let key: String
+    let usedSite: String
+    let configurationLink: String?
+    let serverIP: String?
+    let notes: String?
+}
+
 struct SavedPlatformOption: Codable, Hashable, Identifiable {
     let identity: String
     let displayName: String
     let environments: [String]
+    let keys: [String: [String]]
+    let usageProfiles: [String: [UsageProfile]]
 
     var id: String { identity }
 }

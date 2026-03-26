@@ -172,7 +172,13 @@ struct RootView: View {
 
     private var visibleUsageLogs: [UsageLogRecord] {
         guard let group = selectedGroup else { return [] }
-        return usageLogs.filter { $0.sourceProviderIdentity == group.id }
+        guard let env = selectedEnvironment else {
+            return usageLogs.filter { $0.sourceProviderIdentity == group.id }
+        }
+        return usageLogs.filter {
+            $0.sourceProviderIdentity == group.id &&
+            EnvironmentPreset.canonicalName(for: $0.sourceEnvironmentName) == env
+        }
     }
 
     private var focusedItem: VaultItemRecord? {
@@ -264,16 +270,29 @@ struct RootView: View {
                             selectedID = group.items.first?.id
                         } label: {
                             let isSelected = selectedProviderIdentity == group.id && !isCreatingPlatform
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(group.displayName)
-                                    .font(.headline)
-                                    .foregroundStyle(isSelected ? .white : .primary)
-                                Text("Updated \(group.updatedAt.formatted(date: .abbreviated, time: .shortened))")
-                                    .font(.caption)
-                                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : .secondary)
-                                Text("Created \(group.createdAt.formatted(date: .abbreviated, time: .omitted))")
-                                    .font(.caption)
-                                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : .secondary)
+                            HStack {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text(group.displayName)
+                                        .font(.headline)
+                                        .foregroundStyle(isSelected ? .white : .primary)
+                                    Text("Updated \(group.updatedAt.formatted(date: .abbreviated, time: .shortened))")
+                                        .font(.caption)
+                                        .foregroundStyle(isSelected ? Color.white.opacity(0.88) : .secondary)
+                                    Text("Created \(group.createdAt.formatted(date: .abbreviated, time: .omitted))")
+                                        .font(.caption)
+                                        .foregroundStyle(isSelected ? Color.white.opacity(0.88) : .secondary)
+                                }
+
+                                Spacer()
+
+                                Button(role: .destructive) {
+                                    deleteProvider(group)
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundStyle(isSelected ? Color.white.opacity(0.7) : .secondary)
+                                }
+                                .buttonStyle(.plain)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14)
@@ -654,7 +673,7 @@ struct RootView: View {
         VStack(alignment: .leading, spacing: 10) {
             if isEditingUsageLogs {
                 editableField(
-                    title: "Usage",
+                    title: "Key",
                     text: Binding(
                         get: { editedUsage[record.id] ?? record.usage },
                         set: { editedUsage[record.id] = $0 }
@@ -704,7 +723,7 @@ struct RootView: View {
                 )
             } else {
                 highlightedField(
-                    title: "Usage",
+                    title: "Key",
                     value: record.usage,
                     tint: Color.purple.opacity(0.10),
                     border: Color.purple.opacity(0.35),
@@ -1265,7 +1284,7 @@ struct RootView: View {
     }
 
     private func displayValue(for item: VaultItemRecord) -> String {
-        if let secret = revealedSecrets[item.id], appState.unlockManager.isUnlocked {
+        if appState.unlockManager.isUnlocked, let secret = revealedSecrets[item.id] {
             return secret
         }
 
@@ -1273,6 +1292,9 @@ struct RootView: View {
     }
 
     private func maskedPreview(for item: VaultItemRecord) -> String {
+        if let preview = item.keyPreview, !preview.isEmpty {
+            return preview
+        }
         let prefix = item.keyFingerprint.prefix(10)
         return "locked • 0x\(prefix)…"
     }
@@ -1284,6 +1306,19 @@ struct RootView: View {
         }
 
         revealedSecrets = (try? appState.revealSecrets(for: visibleItems)) ?? [:]
+
+        for item in visibleItems {
+            if item.keyPreview == nil, let secret = revealedSecrets[item.id], !secret.isEmpty {
+                if secret.count > 20 {
+                    item.keyPreview = "\(secret.prefix(10))…\(secret.suffix(10))"
+                } else if secret.count > 10 {
+                    item.keyPreview = "\(secret.prefix(10))…"
+                } else {
+                    item.keyPreview = "\(secret.prefix(4))…"
+                }
+                try? appState.modelContainer.mainContext.save()
+            }
+        }
     }
 
     private func copyAssignment(for item: VaultItemRecord) {
@@ -1304,6 +1339,27 @@ struct RootView: View {
                 selectedID = nil
             }
             synchronizeSelection()
+        } catch {
+            detailError = error.localizedDescription
+        }
+    }
+
+    private func deleteProvider(_ group: ProviderGroup) {
+        do {
+            let logsToDelete = usageLogs.filter { $0.sourceProviderIdentity == group.id }
+            for log in logsToDelete {
+                try appState.deleteUsageLog(log)
+            }
+            for item in group.items {
+                try appState.delete(item)
+            }
+            if selectedProviderIdentity == group.id {
+                selectedProviderIdentity = nil
+                selectedEnvironmentName = nil
+                selectedID = nil
+            }
+            synchronizeSelection()
+            detailError = nil
         } catch {
             detailError = error.localizedDescription
         }

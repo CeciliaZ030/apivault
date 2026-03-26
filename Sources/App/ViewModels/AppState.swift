@@ -59,12 +59,14 @@ final class AppState: ObservableObject {
 
     func lockVault() {
         unlockManager.lock()
+        markDataChanged()
         showTransientMessage("Vault locked.")
     }
 
     func unlockVault() async {
         do {
             try await unlockManager.unlock()
+            markDataChanged()
             showTransientMessage("Vault unlocked for this session.")
         } catch {
             showTransientMessage(error.localizedDescription)
@@ -211,6 +213,7 @@ final class AppState: ObservableObject {
 
     func savedPlatforms() -> [SavedPlatformOption] {
         let records = vaultItems()
+        let logs = usageLogItems()
 
         return Dictionary(grouping: records, by: \.providerIdentity)
             .map { identity, grouped in
@@ -221,10 +224,46 @@ final class AppState: ObservableObject {
                 .compactMap(\.value.first)
                 .sorted()
 
+                var keys: [String: [String]] = [:]
+                for env in environments {
+                    let envKeys = grouped
+                        .filter { EnvironmentPreset.canonicalName(for: $0.environmentName) == env }
+                        .compactMap { $0.keyName }
+                        .filter { !$0.isEmpty }
+                    keys[env] = envKeys
+                }
+
+                let providerLogs = logs.filter { $0.sourceProviderIdentity == identity }
+                var usageProfiles: [String: [UsageProfile]] = [:]
+                for env in environments {
+                    let envLogs = providerLogs.filter {
+                        EnvironmentPreset.canonicalName(for: $0.sourceEnvironmentName) == env
+                    }
+                    var seen = Set<String>()
+                    var profiles: [UsageProfile] = []
+                    for log in envLogs {
+                        let dedup = "\(log.usage)|\(log.usedSite)|\(log.configurationLink ?? "")"
+                        guard !seen.contains(dedup) else { continue }
+                        seen.insert(dedup)
+                        profiles.append(UsageProfile(
+                            key: log.usage,
+                            usedSite: log.usedSite,
+                            configurationLink: log.configurationLink,
+                            serverIP: log.serverIP,
+                            notes: log.notes
+                        ))
+                    }
+                    if !profiles.isEmpty {
+                        usageProfiles[env] = profiles
+                    }
+                }
+
                 return SavedPlatformOption(
                     identity: identity,
                     displayName: grouped.first?.providerDisplayName ?? "Unknown",
-                    environments: environments
+                    environments: environments,
+                    keys: keys,
+                    usageProfiles: usageProfiles
                 )
             }
             .sorted { lhs, rhs in

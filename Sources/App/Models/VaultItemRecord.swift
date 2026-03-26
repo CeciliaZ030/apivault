@@ -20,6 +20,7 @@ final class VaultItemRecord {
     var lastCopiedAt: Date?
     var lastSeenAt: Date?
     var statusRaw: String
+    var keyPreview: String?
 
     init(
         id: UUID = UUID(),
@@ -38,7 +39,8 @@ final class VaultItemRecord {
         updatedAt: Date,
         lastCopiedAt: Date?,
         lastSeenAt: Date?,
-        statusRaw: String
+        statusRaw: String,
+        keyPreview: String? = nil
     ) {
         self.id = id
         self.providerSlug = providerSlug
@@ -57,5 +59,6 @@ final class VaultItemRecord {
         self.lastCopiedAt = lastCopiedAt
         self.lastSeenAt = lastSeenAt
         self.statusRaw = statusRaw
+        self.keyPreview = keyPreview
     }
 }

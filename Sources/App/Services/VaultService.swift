@@ -110,7 +110,8 @@ final class VaultService {
             updatedAt: draft.capturedAt,
             lastCopiedAt: nil,
             lastSeenAt: draft.capturedAt,
-            statusRaw: "active"
+            statusRaw: "active",
+            keyPreview: keyPreview(for: apiKey)
         )
 
         modelContext.insert(record)
@@ -183,7 +184,8 @@ final class VaultService {
                     updatedAt: draft.capturedAt,
                     lastCopiedAt: nil,
                     lastSeenAt: draft.capturedAt,
-                    statusRaw: "active"
+                    statusRaw: "active",
+                    keyPreview: keyPreview(for: apiKey)
                 )
 
                 modelContext.insert(record)
@@ -342,6 +344,7 @@ final class VaultService {
 
         try keychainService.save(secret: trimmed, account: item.keychainAccount)
         item.keyFingerprint = fingerprint(for: trimmed)
+        item.keyPreview = keyPreview(for: trimmed)
         item.updatedAt = Date()
         try modelContext.save()
     }
@@ -456,5 +459,16 @@ final class VaultService {
     private func fingerprint(for secret: String) -> String {
         let digest = SHA256.hash(data: Data(secret.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func keyPreview(for secret: String) -> String {
+        let trimmed = secret.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.count > 20 {
+            return "\(trimmed.prefix(10))…\(trimmed.suffix(10))"
+        }
+        if trimmed.count > 10 {
+            return "\(trimmed.prefix(10))…"
+        }
+        return String(trimmed.prefix(4)) + "…"
     }
 }
