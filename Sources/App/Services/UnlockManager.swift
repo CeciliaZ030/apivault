@@ -28,17 +28,3 @@ final class UnlockManager: ObservableObject {
     }
 }
 
-extension LAContext {
-    func evaluatePolicy(_ policy: LAPolicy, localizedReason reason: String) async throws -> Bool {
-        try await withCheckedThrowingContinuation { continuation in
-            evaluatePolicy(policy, localizedReason: reason) { success, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                } else {
-                    continuation.resume(returning: success)
-                }
-            }
-        }
-    }
-}
-

@@ -10,9 +10,6 @@ struct APIKeyManagerApp: App {
             RootView()
                 .environmentObject(appState)
                 .modelContainer(appState.modelContainer)
-                .task {
-                    appState.startBridgeIfNeeded()
-                }
         }
         .defaultSize(width: 1040, height: 680)
 

@@ -237,27 +237,28 @@ struct RootView: View {
                             selectedEnvironmentName = group.environments.first
                             selectedID = group.items.first?.id
                         } label: {
+                            let isSelected = selectedProviderIdentity == group.id && !isCreatingPlatform
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(group.displayName)
                                     .font(.headline)
-                                    .foregroundStyle(selectedProviderIdentity == group.id && !isCreatingPlatform ? .white : .primary)
+                                    .foregroundStyle(isSelected ? .white : .primary)
                                 Text("Updated \(group.updatedAt.formatted(date: .abbreviated, time: .shortened))")
                                     .font(.caption)
-                                    .foregroundStyle(selectedProviderIdentity == group.id && !isCreatingPlatform ? Color.white.opacity(0.88) : .secondary)
+                                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : .secondary)
                                 Text("Created \(group.createdAt.formatted(date: .abbreviated, time: .omitted))")
                                     .font(.caption)
-                                    .foregroundStyle(selectedProviderIdentity == group.id && !isCreatingPlatform ? Color.white.opacity(0.88) : .secondary)
+                                    .foregroundStyle(isSelected ? Color.white.opacity(0.88) : .secondary)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(14)
                             .background(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                    .fill(selectedProviderIdentity == group.id && !isCreatingPlatform ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
+                                    .fill(isSelected ? Color.accentColor : Color(nsColor: .controlBackgroundColor))
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .stroke(
-                                        selectedProviderIdentity == group.id && !isCreatingPlatform
+                                        isSelected
                                             ? Color.accentColor.opacity(0.35)
                                             : Color(nsColor: .separatorColor),
                                         lineWidth: 1
@@ -610,6 +611,7 @@ struct RootView: View {
     }
 
     private func cancelCreatingPlatform() {
+        guard isCreatingPlatform else { return }
         isCreatingPlatform = false
         draftPlatformName = ""
         draftPlatformEnvironment = ""
@@ -631,42 +633,21 @@ struct RootView: View {
             return
         }
 
-        let populatedRows = draftPlatformRows.filter {
-            !$0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
+        guard let populatedRows = validatedRows(from: draftPlatformRows) else { return }
 
-        guard !populatedRows.isEmpty else {
-            detailError = "Add at least one key and value."
-            return
-        }
-
-        if populatedRows.contains(where: {
-            $0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-            $0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }) {
-            detailError = "Every row needs both a key name and value."
-            return
-        }
+        let drafts = buildDrafts(
+            rows: populatedRows,
+            providerSlug: nil,
+            providerDisplayName: platformName,
+            environment: environment,
+            platformURL: "",
+            sourceURL: "",
+            pageTitle: platformName,
+            notes: nil
+        )
 
         do {
-            for row in populatedRows {
-                try appState.saveManualDraft(
-                    CaptureDraft(
-                        providerSlug: nil,
-                        providerDisplayName: platformName,
-                        keyName: row.keyName.trimmingCharacters(in: .whitespacesAndNewlines),
-                        apiKey: row.value.trimmingCharacters(in: .whitespacesAndNewlines),
-                        platformURL: "",
-                        sourceURL: "",
-                        pageTitle: platformName,
-                        notes: nil,
-                        environment: environment,
-                        capturedAt: Date()
-                    )
-                )
-            }
-
+            try appState.saveManualDrafts(drafts)
             let identity = platformName.lowercased()
             isCreatingPlatform = false
             draftPlatformName = ""
@@ -859,8 +840,8 @@ struct RootView: View {
     private func startEditingKeys() {
         editedKeyNames.removeAll()
         editedValues.removeAll()
-        for item in visibleItems {
-            editedKeyNames[item.id] = keyLabel(for: item, index: 0)
+        for (index, item) in visibleItems.enumerated() {
+            editedKeyNames[item.id] = keyLabel(for: item, index: index)
             editedValues[item.id] = revealedSecrets[item.id] ?? ""
         }
         isEditingKeys = true
@@ -930,13 +911,7 @@ struct RootView: View {
             return
         }
 
-        var nextSecrets: [UUID: String] = [:]
-        for item in visibleItems {
-            if let secret = try? appState.revealSecret(for: item) {
-                nextSecrets[item.id] = secret
-            }
-        }
-        revealedSecrets = nextSecrets
+        revealedSecrets = (try? appState.revealSecrets(for: visibleItems)) ?? [:]
     }
 
     private func copyAssignment(for item: VaultItemRecord) {
@@ -991,13 +966,12 @@ struct RootView: View {
     }
 
     private func cancelDraftEnvironment() {
+        guard isCreatingEnvironment else { return }
         isCreatingEnvironment = false
         draftEnvironmentName = ""
         draftRows = [DraftKeyRow()]
         focusedField = nil
         detailError = nil
-        selectedEnvironmentName = selectedGroup?.environments.first
-        selectedID = visibleItems.first?.id
     }
 
     private func addDraftRow() {
@@ -1041,45 +1015,24 @@ struct RootView: View {
             return
         }
 
-        let populatedRows = draftRows.filter {
-            !$0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-
-        guard !populatedRows.isEmpty else {
-            detailError = "Add at least one key and value."
-            return
-        }
-
-        if populatedRows.contains(where: {
-            $0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-            $0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }) {
-            detailError = "Every row needs both a key name and value."
-            return
-        }
+        guard let populatedRows = validatedRows(from: draftRows) else { return }
 
         let sourceItem = focusedItem ?? group.items.first
         let canonicalEnvironment = EnvironmentPreset.canonicalName(for: environmentName)
 
-        do {
-            for row in populatedRows {
-                try appState.saveManualDraft(
-                    CaptureDraft(
-                        providerSlug: sourceItem?.providerSlug,
-                        providerDisplayName: group.displayName,
-                        keyName: row.keyName.trimmingCharacters(in: .whitespacesAndNewlines),
-                        apiKey: row.value.trimmingCharacters(in: .whitespacesAndNewlines),
-                        platformURL: sourceItem?.platformURL ?? "",
-                        sourceURL: sourceItem?.sourceURL ?? (sourceItem?.platformURL ?? ""),
-                        pageTitle: sourceItem?.pageTitle ?? group.displayName,
-                        notes: sourceItem?.notes,
-                        environment: canonicalEnvironment,
-                        capturedAt: Date()
-                    )
-                )
-            }
+        let drafts = buildDrafts(
+            rows: populatedRows,
+            providerSlug: sourceItem?.providerSlug,
+            providerDisplayName: group.displayName,
+            environment: canonicalEnvironment,
+            platformURL: sourceItem?.platformURL ?? "",
+            sourceURL: sourceItem?.sourceURL ?? (sourceItem?.platformURL ?? ""),
+            pageTitle: sourceItem?.pageTitle ?? group.displayName,
+            notes: sourceItem?.notes
+        )
 
+        do {
+            try appState.saveManualDrafts(drafts)
             isCreatingEnvironment = false
             draftEnvironmentName = ""
             draftRows = [DraftKeyRow()]
@@ -1098,44 +1051,23 @@ struct RootView: View {
             return
         }
 
-        let populatedRows = currentEnvironmentDraftRows.filter {
-            !$0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-
-        guard !populatedRows.isEmpty else {
-            detailError = "Add at least one key and value."
-            return
-        }
-
-        if populatedRows.contains(where: {
-            $0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-            $0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }) {
-            detailError = "Every row needs both a key name and value."
-            return
-        }
+        guard let populatedRows = validatedRows(from: currentEnvironmentDraftRows) else { return }
 
         let sourceItem = focusedItem ?? visibleItems.first ?? group.items.first
 
-        do {
-            for row in populatedRows {
-                try appState.saveManualDraft(
-                    CaptureDraft(
-                        providerSlug: sourceItem?.providerSlug,
-                        providerDisplayName: group.displayName,
-                        keyName: row.keyName.trimmingCharacters(in: .whitespacesAndNewlines),
-                        apiKey: row.value.trimmingCharacters(in: .whitespacesAndNewlines),
-                        platformURL: sourceItem?.platformURL ?? "",
-                        sourceURL: sourceItem?.sourceURL ?? (sourceItem?.platformURL ?? ""),
-                        pageTitle: sourceItem?.pageTitle ?? group.displayName,
-                        notes: sourceItem?.notes,
-                        environment: selectedEnvironment,
-                        capturedAt: Date()
-                    )
-                )
-            }
+        let drafts = buildDrafts(
+            rows: populatedRows,
+            providerSlug: sourceItem?.providerSlug,
+            providerDisplayName: group.displayName,
+            environment: selectedEnvironment,
+            platformURL: sourceItem?.platformURL ?? "",
+            sourceURL: sourceItem?.sourceURL ?? (sourceItem?.platformURL ?? ""),
+            pageTitle: sourceItem?.pageTitle ?? group.displayName,
+            notes: sourceItem?.notes
+        )
 
+        do {
+            try appState.saveManualDrafts(drafts)
             currentEnvironmentDraftRows.removeAll()
             detailError = nil
             synchronizeSelection()
@@ -1207,5 +1139,54 @@ struct RootView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
         )
+    }
+
+    private func validatedRows(from rows: [DraftKeyRow]) -> [DraftKeyRow]? {
+        let populated = rows.filter {
+            !$0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+
+        guard !populated.isEmpty else {
+            detailError = "Add at least one key and value."
+            return nil
+        }
+
+        if populated.contains(where: {
+            $0.keyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+            $0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }) {
+            detailError = "Every row needs both a key name and value."
+            return nil
+        }
+
+        return populated
+    }
+
+    private func buildDrafts(
+        rows: [DraftKeyRow],
+        providerSlug: String?,
+        providerDisplayName: String,
+        environment: String,
+        platformURL: String,
+        sourceURL: String,
+        pageTitle: String,
+        notes: String?
+    ) -> [CaptureDraft] {
+        let now = Date()
+        return rows.map { row in
+            CaptureDraft(
+                providerSlug: providerSlug,
+                providerDisplayName: providerDisplayName,
+                keyName: row.keyName.trimmingCharacters(in: .whitespacesAndNewlines),
+                apiKey: row.value.trimmingCharacters(in: .whitespacesAndNewlines),
+                platformURL: platformURL,
+                sourceURL: sourceURL,
+                pageTitle: pageTitle,
+                notes: notes,
+                environment: environment,
+                capturedAt: now
+            )
+        }
     }
 }

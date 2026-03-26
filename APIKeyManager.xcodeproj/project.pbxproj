@@ -28,7 +28,6 @@
 		C6710C7716025517ECA6D08A /* popup.css in Resources */ = {isa = PBXBuildFile; fileRef = D4013D0E7F8A60704F8DC068 /* popup.css */; };
 		CA3CA1DAE1D0241964B5581A /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9410A092B689B8C7F472A268 /* AppConstants.swift */; };
 		D12B1B1AE5663607179EB33F /* UsageLogRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2F89106C6C3C040E48A241F /* UsageLogRecord.swift */; };
-		DB0A29EE9381333FE0C32771 /* GlassmorphismStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = E36D516DCEDFBDF4A2445E21 /* GlassmorphismStyle.swift */; };
 		E056F15AAD26B898EDB5C841 /* APIKeyManagerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB6425703294C5563C060E5 /* APIKeyManagerApp.swift */; };
 		E84D694769E2FBE50E6FFA2E /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0719BF41FF2DEFE3E846F7BF /* AppState.swift */; };
 /* End PBXBuildFile section */
@@ -79,7 +78,6 @@
 		C2F89106C6C3C040E48A241F /* UsageLogRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageLogRecord.swift; sourceTree = "<group>"; };
 		D3AB54D617948192CD7D9D11 /* LoopbackBridgeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopbackBridgeClient.swift; sourceTree = "<group>"; };
 		D4013D0E7F8A60704F8DC068 /* popup.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = popup.css; sourceTree = "<group>"; };
-		E36D516DCEDFBDF4A2445E21 /* GlassmorphismStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassmorphismStyle.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -115,7 +113,6 @@
 		6700974F7FB04E7B8DE29A8E /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				E36D516DCEDFBDF4A2445E21 /* GlassmorphismStyle.swift */,
 				4A967D358326DA7993FCE710 /* InstructionsView.swift */,
 				86E4049CB98B31E4CD81FB22 /* RootView.swift */,
 			);
@@ -292,7 +289,6 @@
 				E84D694769E2FBE50E6FFA2E /* AppState.swift in Sources */,
 				73BF756382C4ABB97FE278C8 /* BridgeModels.swift in Sources */,
 				F1A2B3C4D5E6F78901234567 /* EditMetadataView.swift in Sources */,
-				DB0A29EE9381333FE0C32771 /* GlassmorphismStyle.swift in Sources */,
 				343BAFD2D5776E043FD1637F /* InstructionsView.swift in Sources */,
 				3F732209D19F2AFE6C97C724 /* KeychainService.swift in Sources */,
 				258C8C75C14F73E1C8249D4E /* LocalBridgeServer.swift in Sources */,

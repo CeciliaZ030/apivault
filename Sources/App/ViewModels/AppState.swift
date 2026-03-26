@@ -77,6 +77,13 @@ final class AppState: ObservableObject {
         showTransientMessage("Saved \(record.providerDisplayName) key.")
     }
 
+    func saveManualDrafts(_ drafts: [CaptureDraft]) throws {
+        let records = try vaultService.saveDrafts(drafts)
+        markDataChanged()
+        let name = records.first?.providerDisplayName ?? "Unknown"
+        showTransientMessage("Saved \(records.count) key(s) for \(name).")
+    }
+
     func saveUsageLog(_ draft: UsageLogDraft) throws {
         let record = try vaultService.saveUsageLog(draft)
         markDataChanged()
@@ -93,6 +100,10 @@ final class AppState: ObservableObject {
         try vaultService.revealSecret(for: item)
     }
 
+    func revealSecrets(for items: [VaultItemRecord]) throws -> [UUID: String] {
+        try vaultService.revealSecrets(for: items)
+    }
+
     func copySecret(for item: VaultItemRecord) throws {
         try vaultService.copySecret(for: item)
         showTransientMessage("Copied \(item.providerDisplayName) key.")
@@ -100,7 +111,8 @@ final class AppState: ObservableObject {
 
     func copyAssignment(for item: VaultItemRecord) throws {
         try vaultService.copyAssignment(for: item)
-        let label = item.keyName?.isEmpty == false ? item.keyName! : item.providerDisplayName
+        let name = item.keyName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let label = name.isEmpty ? item.providerDisplayName : name
         showTransientMessage("Copied \(label)=…")
     }
 
@@ -159,10 +171,6 @@ final class AppState: ObservableObject {
 
     func postMessage(_ message: String) {
         showTransientMessage(message)
-    }
-
-    func recognizedProvider(for urlString: String?) -> RecognizedProviderMatch? {
-        ProviderCatalog.recognize(urlString: urlString)
     }
 
     func vaultItems() -> [VaultItemRecord] {

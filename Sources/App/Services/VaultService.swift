@@ -125,6 +125,84 @@ final class VaultService {
         }
     }
 
+    func saveDrafts(_ drafts: [CaptureDraft]) throws -> [VaultItemRecord] {
+        var savedAccounts: [String] = []
+        var savedRecords: [VaultItemRecord] = []
+
+        do {
+            for draft in drafts {
+                let apiKey = draft.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !apiKey.isEmpty else {
+                    throw VaultError.validation("API key is required.")
+                }
+
+                let keyName = draft.keyName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !keyName.isEmpty else {
+                    throw VaultError.validation("Key name is required.")
+                }
+
+                let providerDisplayName = resolveProviderDisplayName(slug: draft.providerSlug, customName: draft.providerDisplayName)
+                let providerIdentity = normalizedProviderIdentity(slug: draft.providerSlug, displayName: providerDisplayName)
+                let environment = normalizedEnvironmentName(draft.environment)
+                let notes = normalizedOptionalString(draft.notes)
+                let pageTitle = normalizedOptionalString(draft.pageTitle)
+                let platformURL = normalizedOptionalString(draft.platformURL)
+                let sourceURL = draft.sourceURL.trimmingCharacters(in: .whitespacesAndNewlines)
+                let fingerprint = fingerprint(for: apiKey)
+
+                let descriptor = FetchDescriptor<VaultItemRecord>(
+                    predicate: #Predicate<VaultItemRecord> {
+                        $0.providerIdentity == providerIdentity && $0.keyFingerprint == fingerprint
+                    }
+                )
+
+                if try !modelContext.fetch(descriptor).isEmpty {
+                    throw VaultError.duplicate("This key already exists for \(providerDisplayName).")
+                }
+
+                let id = UUID()
+                let keychainAccount = id.uuidString
+
+                try keychainService.save(secret: apiKey, account: keychainAccount)
+                savedAccounts.append(keychainAccount)
+
+                let record = VaultItemRecord(
+                    id: id,
+                    providerSlug: draft.providerSlug,
+                    providerDisplayName: providerDisplayName,
+                    providerIdentity: providerIdentity,
+                    environmentName: environment,
+                    keyName: keyName,
+                    keychainAccount: keychainAccount,
+                    keyFingerprint: fingerprint,
+                    platformURL: platformURL,
+                    sourceURL: sourceURL,
+                    pageTitle: pageTitle,
+                    notes: notes,
+                    createdAt: draft.capturedAt,
+                    updatedAt: draft.capturedAt,
+                    lastCopiedAt: nil,
+                    lastSeenAt: draft.capturedAt,
+                    statusRaw: "active"
+                )
+
+                modelContext.insert(record)
+                savedRecords.append(record)
+            }
+
+            try modelContext.save()
+            return savedRecords
+        } catch {
+            for account in savedAccounts {
+                try? keychainService.delete(account: account)
+            }
+            for record in savedRecords {
+                modelContext.delete(record)
+            }
+            throw error
+        }
+    }
+
     func saveUsageLog(_ draft: UsageLogDraft) throws -> UsageLogRecord {
         let sourceProviderDisplayName = draft.sourceProviderDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !sourceProviderDisplayName.isEmpty else {
@@ -180,6 +258,21 @@ final class VaultService {
         return try keychainService.read(account: item.keychainAccount)
     }
 
+    func revealSecrets(for items: [VaultItemRecord]) throws -> [UUID: String] {
+        guard unlockManager.isUnlocked else {
+            throw VaultError.locked
+        }
+
+        let allSecrets = try keychainService.readAll()
+        var result: [UUID: String] = [:]
+        for item in items {
+            if let secret = allSecrets[item.keychainAccount] {
+                result[item.id] = secret
+            }
+        }
+        return result
+    }
+
     func copySecret(for item: VaultItemRecord) throws {
         let secret = try revealSecret(for: item)
         NSPasteboard.general.clearContents()
@@ -189,9 +282,8 @@ final class VaultService {
 
     func copyAssignment(for item: VaultItemRecord) throws {
         let secret = try revealSecret(for: item)
-        let keyName = (item.keyName?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
-            ? item.keyName!
-            : "API_KEY"
+        let trimmedName = item.keyName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let keyName = trimmedName.isEmpty ? "API_KEY" : trimmedName
 
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString("\(keyName)=\(secret)", forType: .string)
@@ -199,8 +291,9 @@ final class VaultService {
     }
 
     private func markCopied(_ item: VaultItemRecord) {
-        item.lastCopiedAt = Date()
-        item.updatedAt = Date()
+        let now = Date()
+        item.lastCopiedAt = now
+        item.updatedAt = now
         try? modelContext.save()
     }
 
