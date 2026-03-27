@@ -25,12 +25,35 @@ Local macOS dashboard plus Safari Web Extension for capturing, storing, and mana
 ## Build
 
 ```bash
-cd /Users/cecilia/vibe-tools/api-key-manager
+git clone https://github.com/CeciliaZ030/apivault.git
+cd apivault
+./install
+```
+
+`./install` will:
+- generate the Xcode project if needed
+- build the macOS app
+- copy `APIKeyManager.app` into `/Applications`
+- launch the installed app
+
+## Manual Safari Step
+
+Safari still requires one manual step after install:
+
+1. Open Safari.
+2. Go to `Safari > Settings > Extensions`.
+3. Enable `APIKeyManager Extension`.
+4. If it does not appear immediately, quit and reopen Safari once.
+
+## Manual Developer Build
+
+If you want to work on the app in Xcode instead:
+
+```bash
+cd apivault
 xcodegen generate
 open APIKeyManager.xcodeproj
 ```
-
-Build and run the `APIKeyManager` scheme in Xcode, then enable `APIKeyManager Extension` in Safari.
 
 ## Current Flow
 
