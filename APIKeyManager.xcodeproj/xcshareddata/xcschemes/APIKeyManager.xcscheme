@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "1430"
-   version = "1.3">
+   version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
-      buildImplicitDependencies = "YES">
+      buildImplicitDependencies = "YES"
+      runPostActionsOnFailure = "NO">
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -15,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "06881F6ECED28C65D7268CF2"
-               BuildableName = "APIKeyManager.app"
+               BuildableName = "APIKeyManagerApp.app"
                BlueprintName = "APIKeyManagerApp"
                ReferencedContainer = "container:APIKeyManager.xcodeproj">
             </BuildableReference>
@@ -29,7 +30,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "83DD8006A88BCA90766F8666"
-               BuildableName = "APIKeyManager Extension.appex"
+               BuildableName = "APIKeyManagerExtension.appex"
                BlueprintName = "APIKeyManagerExtension"
                ReferencedContainer = "container:APIKeyManager.xcodeproj">
             </BuildableReference>
@@ -40,12 +41,13 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
-      shouldUseLaunchSchemeArgsEnv = "YES">
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      onlyGenerateCoverageForSpecifiedTargets = "NO">
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "06881F6ECED28C65D7268CF2"
-            BuildableName = "APIKeyManager.app"
+            BuildableName = "APIKeyManagerApp.app"
             BlueprintName = "APIKeyManagerApp"
             ReferencedContainer = "container:APIKeyManager.xcodeproj">
          </BuildableReference>
@@ -68,11 +70,13 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "06881F6ECED28C65D7268CF2"
-            BuildableName = "APIKeyManager.app"
+            BuildableName = "APIKeyManagerApp.app"
             BlueprintName = "APIKeyManagerApp"
             ReferencedContainer = "container:APIKeyManager.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <CommandLineArguments>
+      </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
@@ -85,7 +89,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "06881F6ECED28C65D7268CF2"
-            BuildableName = "APIKeyManager.app"
+            BuildableName = "APIKeyManagerApp.app"
             BlueprintName = "APIKeyManagerApp"
             ReferencedContainer = "container:APIKeyManager.xcodeproj">
          </BuildableReference>

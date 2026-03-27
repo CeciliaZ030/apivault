@@ -22,6 +22,7 @@
 		8693CF9985F3C16827000834 /* VaultItemRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = B853A8EBD6E12AAB16E5EC5C /* VaultItemRecord.swift */; };
 		86F683FBB8410560EFE532C2 /* UnlockManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EA82BADE1FB668E344892E /* UnlockManager.swift */; };
 		875C08ECB69902CD446CD8CF /* BridgeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 484B4C6BA2AC6AA73F052871 /* BridgeModels.swift */; };
+		89A13B6D79427FD1D157E2E0 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0B060501990EFCE91498B68B /* AppIcon.icns */; };
 		A327B042C639E57445695338 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = C0041FD87DE90C2F3946986B /* popup.html */; };
 		B1B5B06344945561B896DA2C /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9410A092B689B8C7F472A268 /* AppConstants.swift */; };
 		B903A9279F3AE53E3DE4AE3D /* LoopbackBridgeClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AB54D617948192CD7D9D11 /* LoopbackBridgeClient.swift */; };
@@ -59,6 +60,7 @@
 /* Begin PBXFileReference section */
 		02F3EC84B16DAC3CBC15FD2A /* ProviderDefinition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderDefinition.swift; sourceTree = "<group>"; };
 		0719BF41FF2DEFE3E846F7BF /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		0B060501990EFCE91498B68B /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		1EB6425703294C5563C060E5 /* APIKeyManagerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIKeyManagerApp.swift; sourceTree = "<group>"; };
 		22A273B1B0508F0D78305AC0 /* APIKeyManagerExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = APIKeyManagerExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		484B4C6BA2AC6AA73F052871 /* BridgeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BridgeModels.swift; sourceTree = "<group>"; };
@@ -119,6 +121,14 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		6CEF91DCA4D52355175D5FF0 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0B060501990EFCE91498B68B /* AppIcon.icns */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		7E01C669F195E57E5D106C9C /* Extension */ = {
 			isa = PBXGroup;
 			children = (
@@ -162,6 +172,7 @@
 			children = (
 				1EB6425703294C5563C060E5 /* APIKeyManagerApp.swift */,
 				2F250ABCA45DB25544316206 /* Models */,
+				6CEF91DCA4D52355175D5FF0 /* Resources */,
 				2F1AEC4629EEB4E2BED09CCC /* Services */,
 				9D80AD18B991ABD9268757AC /* ViewModels */,
 				6700974F7FB04E7B8DE29A8E /* Views */,
@@ -270,6 +281,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				89A13B6D79427FD1D157E2E0 /* AppIcon.icns in Resources */,
 				281FA2B21A36E7C42B758926 /* manifest.json in Resources */,
 				C6710C7716025517ECA6D08A /* popup.css in Resources */,
 				A327B042C639E57445695338 /* popup.html in Resources */,

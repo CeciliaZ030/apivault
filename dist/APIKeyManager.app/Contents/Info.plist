@@ -10,6 +10,8 @@
 	<string>API Key Manager</string>
 	<key>CFBundleExecutable</key>
 	<string>APIKeyManager</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.cecilia.APIKeyManager</string>
 	<key>CFBundleInfoDictionaryVersion</key>

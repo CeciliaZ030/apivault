@@ -25,6 +25,7 @@ targets:
       path: Config/App-Info.plist
       properties:
         CFBundleDisplayName: API Key Manager
+        CFBundleIconFile: AppIcon
         LSApplicationCategoryType: public.app-category.developer-tools
         SFSafariWebExtensionConverterVersion: "26.3"
     dependencies:

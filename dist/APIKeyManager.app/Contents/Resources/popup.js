@@ -7,8 +7,6 @@ const state = {
   },
   bridgeMode: "unknown",
   savedPlatforms: [],
-  keyRowCount: 0,
-  usageRowCount: 0,
   restoredDraft: null
 };
 
@@ -64,9 +62,9 @@ function bindEvents() {
   refs.logKeyTab.addEventListener("click", () => switchTab("key"));
   refs.logUsageTab.addEventListener("click", () => switchTab("usage"));
   refs.environmentSelect.addEventListener("change", syncKeyEnvironmentVisibility);
-  refs.removeKeyRowButton.addEventListener("click", () => removeLastRow(refs.keyRows, () => addKeyRow()));
+  refs.removeKeyRowButton.addEventListener("click", () => removeLastRow(refs.keyRows, () => createKeyRow()));
   refs.addKeyRowButton.addEventListener("click", () => {
-    addKeyRow();
+    createKeyRow();
     void persistDraft();
   });
   refs.openAppButton.addEventListener("click", openDashboard);
@@ -76,9 +74,9 @@ function bindEvents() {
   refs.keyForm.addEventListener("change", handleDraftMutation);
   refs.usagePlatformSelect.addEventListener("change", syncUsagePlatformState);
   refs.usageEnvironmentSelect.addEventListener("change", syncUsageEnvironmentVisibility);
-  refs.removeUsageRowButton.addEventListener("click", () => removeLastRow(refs.usageRows, () => addUsageRow()));
+  refs.removeUsageRowButton.addEventListener("click", () => removeLastRow(refs.usageRows, () => createUsageRow()));
   refs.addUsageRowButton.addEventListener("click", () => {
-    addUsageRow();
+    createUsageRow();
     void persistDraft();
   });
   refs.clearUsageButton.addEventListener("click", clearUsageDraft);
@@ -100,7 +98,6 @@ async function initialize() {
   state.activeTab.siteName = extractSiteName(state.activeTab.url);
 
   refs.currentURLInput.value = state.activeTab.url;
-  restoreDefaults();
   await restoreDraft();
 
   try {
@@ -192,6 +189,7 @@ function syncUsagePlatformState() {
   const isCustom = refs.usagePlatformSelect.value === "__custom__";
   refs.customUsagePlatformRow.classList.toggle("hidden", !isCustom);
   populateUsageEnvironmentOptions();
+  refreshAllUsageKeySelects();
 }
 
 function populateUsageEnvironmentOptions() {
@@ -217,6 +215,7 @@ function populateUsageEnvironmentOptions() {
 
 function syncUsageEnvironmentVisibility() {
   refs.customUsageEnvironmentRow.classList.toggle("hidden", refs.usageEnvironmentSelect.value !== "__custom__");
+  refreshAllUsageKeySelects();
 }
 
 function appendOption(select, value, label) {
@@ -224,10 +223,6 @@ function appendOption(select, value, label) {
   option.value = value;
   option.textContent = label;
   select.appendChild(option);
-}
-
-function addKeyRow() {
-  return createKeyRow();
 }
 
 function createKeyRow(initialValues = {}) {
@@ -253,10 +248,6 @@ function createKeyRow(initialValues = {}) {
   return row;
 }
 
-function addUsageRow() {
-  return createUsageRow();
-}
-
 function createUsageRow(initialValues = {}) {
   const row = document.createElement("div");
   row.className = "rowCard";
@@ -264,18 +255,22 @@ function createUsageRow(initialValues = {}) {
   row.innerHTML = `
     <div class="rowCardGrid">
       <label>
-        <span>Usage</span>
-        <input class="usageLabelInput" type="text" placeholder="Example: ANTHROPIC_API_KEY" value="${escapeAttribute(initialValues.usage ?? "")}">
+        <span>Key</span>
+        <select class="usageLabelInput"></select>
       </label>
       <label>
+        <span>Usage Profile</span>
+        <select class="usageProfileSelect"></select>
+      </label>
+      <label class="usedSiteLabel">
         <span>Used Site</span>
         <input class="usedSiteInput" type="text" placeholder="Example: Github" value="${escapeAttribute(initialValues.usedSite ?? "")}">
       </label>
-      <label>
+      <label class="configurationLinkLabel">
         <span>Configuration Link</span>
         <input class="configurationLinkInput" type="text" placeholder="Example: github.com/environment" value="${escapeAttribute(initialValues.configurationLink ?? "")}">
       </label>
-      <label>
+      <label class="serverIPLabel">
         <span>Server IP</span>
         <input class="serverIPInput" type="text" placeholder="Optional" value="${escapeAttribute(initialValues.serverIP ?? "")}">
       </label>
@@ -283,8 +278,114 @@ function createUsageRow(initialValues = {}) {
   `;
 
   refs.usageRows.appendChild(row);
+
+  const keySelect = row.querySelector(".usageLabelInput");
+  const profileSelect = row.querySelector(".usageProfileSelect");
+
+  populateUsageKeySelect(keySelect, initialValues.usage ?? "");
+  populateUsageProfileSelect(profileSelect, initialValues.usageProfile ?? "");
+  syncUsageRowVisibility(row);
+
+  profileSelect.addEventListener("change", () => {
+    applyUsageProfile(row);
+    void persistDraft();
+  });
+
   syncRemoveButtons(refs.usageRows);
   return row;
+}
+
+function getUsageProfiles() {
+  const platform = state.savedPlatforms.find(
+    (p) => p.identity === refs.usagePlatformSelect.value
+  );
+  const env = refs.usageEnvironmentSelect.value === "__custom__"
+    ? refs.customUsageEnvironmentInput.value.trim()
+    : refs.usageEnvironmentSelect.value;
+  return (platform?.usageProfiles ?? {})[env] ?? [];
+}
+
+function populateUsageKeySelect(select, selectedValue) {
+  select.innerHTML = "";
+  const platform = state.savedPlatforms.find(
+    (p) => p.identity === refs.usagePlatformSelect.value
+  );
+  const env = refs.usageEnvironmentSelect.value === "__custom__"
+    ? refs.customUsageEnvironmentInput.value.trim()
+    : refs.usageEnvironmentSelect.value;
+  const keys = (platform?.keys ?? {})[env] ?? [];
+
+  if (keys.length === 0) {
+    appendOption(select, "", "No keys available");
+  } else {
+    appendOption(select, "", "Select key");
+    keys.forEach((key) => appendOption(select, key, key));
+  }
+
+  if (selectedValue) {
+    select.value = selectedValue;
+  }
+}
+
+function populateUsageProfileSelect(select, selectedValue) {
+  select.innerHTML = "";
+  const profiles = getUsageProfiles();
+
+  appendOption(select, "__new__", "New");
+  const seen = new Set();
+  profiles.forEach((profile, index) => {
+    const label = `${profile.usedSite}${profile.configurationLink ? " \u2014 " + profile.configurationLink : ""}`;
+    const dedup = label.toLowerCase();
+    if (!seen.has(dedup)) {
+      seen.add(dedup);
+      appendOption(select, String(index), label);
+    }
+  });
+
+  if (selectedValue) {
+    select.value = selectedValue;
+  }
+}
+
+function applyUsageProfile(row) {
+  const profileSelect = row.querySelector(".usageProfileSelect");
+  const val = profileSelect.value;
+  syncUsageRowVisibility(row);
+
+  if (val === "__new__") {
+    return;
+  }
+
+  const profiles = getUsageProfiles();
+  const profile = profiles[parseInt(val, 10)];
+  if (!profile) return;
+
+  row.querySelector(".usedSiteInput").value = profile.usedSite ?? "";
+  row.querySelector(".configurationLinkInput").value = profile.configurationLink ?? "";
+  row.querySelector(".serverIPInput").value = profile.serverIP ?? "";
+}
+
+function syncUsageRowVisibility(row) {
+  const isNew = row.querySelector(".usageProfileSelect").value === "__new__";
+  const profiles = getUsageProfiles();
+  const hasProfiles = profiles.length > 0;
+
+  row.querySelector(".usedSiteLabel").classList.toggle("hidden", !isNew && hasProfiles);
+  row.querySelector(".configurationLinkLabel").classList.toggle("hidden", !isNew && hasProfiles);
+  row.querySelector(".serverIPLabel").classList.toggle("hidden", !isNew && hasProfiles);
+}
+
+function refreshAllUsageKeySelects() {
+  const rows = refs.usageRows.querySelectorAll(".rowCard");
+  rows.forEach((row) => {
+    const keySelect = row.querySelector(".usageLabelInput");
+    const profileSelect = row.querySelector(".usageProfileSelect");
+    const currentKey = keySelect.value;
+    const currentProfile = profileSelect.value;
+    populateUsageKeySelect(keySelect, currentKey);
+    populateUsageProfileSelect(profileSelect, currentProfile);
+    syncUsageRowVisibility(row);
+  });
 }
 
 function removeLastRow(container, addBack) {
@@ -423,12 +524,17 @@ async function submitUsage(event) {
 
   for (const row of usageRows) {
     const usage = row.querySelector(".usageLabelInput").value.trim();
-    const usedSite = row.querySelector(".usedSiteInput").value.trim();
-    const configurationLink = row.querySelector(".configurationLinkInput").value.trim();
-    const serverIP = row.querySelector(".serverIPInput").value.trim();
+    const profileVal = row.querySelector(".usageProfileSelect").value;
+    const profiles = getUsageProfiles();
+    const isProfileSelected = profileVal !== "__new__" && profiles.length > 0;
+    const profile = isProfileSelected ? profiles[parseInt(profileVal, 10)] : null;
+
+    const usedSite = profile ? (profile.usedSite ?? "") : row.querySelector(".usedSiteInput").value.trim();
+    const configurationLink = profile ? (profile.configurationLink ?? "") : row.querySelector(".configurationLinkInput").value.trim();
+    const serverIP = profile ? (profile.serverIP ?? "") : row.querySelector(".serverIPInput").value.trim();
 
     if (!usage || !usedSite) {
-      setStatus("Every usage row needs both Usage and Used Site.", "error");
+      setStatus("Every usage row needs both Key and Used Site.", "error");
       refs.saveUsageButton.disabled = false;
       return;
     }
@@ -463,6 +569,7 @@ async function submitUsage(event) {
     clearUsageFormFields();
     await persistDraft();
     setStatus(`Logged ${drafts.length} usage entr${drafts.length === 1 ? "y" : "ies"}.`, "success");
+    await refreshPlatforms();
   } catch (error) {
     setStatus(error.message, "error");
   } finally {
@@ -472,14 +579,12 @@ async function submitUsage(event) {
 
 function clearKeyRows() {
   refs.keyRows.innerHTML = "";
-  state.keyRowCount = 0;
-  addKeyRow();
+  createKeyRow();
 }
 
 function clearUsageRows() {
   refs.usageRows.innerHTML = "";
-  state.usageRowCount = 0;
-  addUsageRow();
+  createUsageRow();
 }
 
 function clearKeyFormFields() {
@@ -563,10 +668,10 @@ function restoreDefaults() {
   refs.environmentSelect.value = "production";
   syncKeyEnvironmentVisibility();
   if (!refs.keyRows.children.length) {
-    addKeyRow();
+    createKeyRow();
   }
   if (!refs.usageRows.children.length) {
-    addUsageRow();
+    createUsageRow();
   }
 }
 
@@ -674,6 +779,7 @@ function collectDraft() {
       notes: refs.usageNotesInput.value,
       rows: Array.from(refs.usageRows.querySelectorAll(".rowCard")).map((row) => ({
         usage: row.querySelector(".usageLabelInput").value,
+        usageProfile: row.querySelector(".usageProfileSelect").value,
         usedSite: row.querySelector(".usedSiteInput").value,
         configurationLink: row.querySelector(".configurationLinkInput").value,
         serverIP: row.querySelector(".serverIPInput").value

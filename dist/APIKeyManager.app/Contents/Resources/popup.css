@@ -226,7 +226,6 @@ textarea {
 
 .grid {
   display: grid;
-  grid-template-columns: 1fr;
   gap: 14px;
 }
 
@@ -268,18 +267,6 @@ textarea {
 .rowCard:last-child {
   border-bottom: none;
   padding-bottom: 0;
-}
-
-.rowCardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.rowLabel {
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--muted);
 }
 
 .rowCardGrid {
