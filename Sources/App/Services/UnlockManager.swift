@@ -22,9 +22,8 @@ final class UnlockManager: ObservableObject {
             throw error ?? NSError(domain: "UnlockManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "This Mac cannot evaluate device owner authentication."])
         }
 
-        let reason = "Unlock API Key Manager to reveal or copy secrets."
+        let reason = "Unlock Apivault to reveal or copy secrets."
         let success = try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)
         unlockState = success ? .unlockedSession : .locked
     }
 }
-

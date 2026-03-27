@@ -348,7 +348,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cecilia.APIKeyManager.Extension;
-				PRODUCT_NAME = "APIKeyManager Extension";
+				PRODUCT_NAME = "Apivault Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 			};
@@ -425,7 +425,7 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cecilia.APIKeyManager;
-				PRODUCT_NAME = APIKeyManager;
+				PRODUCT_NAME = Apivault;
 				SDKROOT = macosx;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 			};
@@ -509,7 +509,7 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cecilia.APIKeyManager;
-				PRODUCT_NAME = APIKeyManager;
+				PRODUCT_NAME = Apivault;
 				SDKROOT = macosx;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 			};
@@ -528,7 +528,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cecilia.APIKeyManager.Extension;
-				PRODUCT_NAME = "APIKeyManager Extension";
+				PRODUCT_NAME = "Apivault Extension";
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 			};

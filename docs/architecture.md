@@ -25,7 +25,7 @@ flowchart LR
     popup["Safari Web Extension Popup"]
     handler["Safari Extension Handler"]
     fallback["Localhost HTTP Fallback<br/>127.0.0.1:38173/bridge"]
-    app["API Key Manager Host App"]
+    app["Apivault Host App"]
     dashboard["Dashboard UI"]
     bridge["Local Bridge Server"]
     swiftdata["SwiftData Metadata Store"]

@@ -65,7 +65,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                             id: bridgeRequest.id,
                             ok: true,
                             code: nil,
-                            message: "Opening API Key Manager.",
+                            message: "Opening Apivault.",
                             data: nil
                         )
                     case .failure(let error):
@@ -92,7 +92,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
                         id: bridgeRequest.id,
                         ok: false,
                         code: .internalError,
-                        message: "Launch API Key Manager and try again. \(error.localizedDescription)",
+                        message: "Launch Apivault and try again. \(error.localizedDescription)",
                         data: nil
                     )
                 }

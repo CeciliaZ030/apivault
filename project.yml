@@ -24,7 +24,7 @@ targets:
     info:
       path: Config/App-Info.plist
       properties:
-        CFBundleDisplayName: API Key Manager
+        CFBundleDisplayName: Apivault
         CFBundleIconFile: AppIcon
         LSApplicationCategoryType: public.app-category.developer-tools
         SFSafariWebExtensionConverterVersion: "26.3"
@@ -37,7 +37,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cecilia.APIKeyManager
-        PRODUCT_NAME: APIKeyManager
+        PRODUCT_NAME: Apivault
         INFOPLIST_FILE: Config/App-Info.plist
         CODE_SIGN_STYLE: Automatic
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
@@ -59,7 +59,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.cecilia.APIKeyManager.Extension
-        PRODUCT_NAME: APIKeyManager Extension
+        PRODUCT_NAME: Apivault Extension
         INFOPLIST_FILE: Config/Extension-Info.plist
         CODE_SIGN_STYLE: Automatic
         APPLICATION_EXTENSION_API_ONLY: YES

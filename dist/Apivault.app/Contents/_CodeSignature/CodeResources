@@ -10,7 +10,7 @@
 		</data>
 		<key>Resources/manifest.json</key>
 		<data>
-		2gnGWS3RcEsnX942huF6pP8CyVE=
+		UirZTtFEZK2re7+9HyrKhkwJaeg=
 		</data>
 		<key>Resources/popup.css</key>
 		<data>
@@ -18,41 +18,41 @@
 		</data>
 		<key>Resources/popup.html</key>
 		<data>
-		O0TC/dNBUcsfW6XMqbtt6pjhOOw=
+		AhsXstacA9O0U147w7rMFlGBfSw=
 		</data>
 		<key>Resources/popup.js</key>
 		<data>
-		Rq6eau2cFFzfICwWEH2OOZjSb10=
+		RO5rO45rfK4dsMfmaqLZD17dWNk=
 		</data>
 	</dict>
 	<key>files2</key>
 	<dict>
-		<key>MacOS/APIKeyManager.debug.dylib</key>
+		<key>MacOS/Apivault.debug.dylib</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			dyAzSgA8kS/kGuicqhlNfBPiaiM=
+			ItHYCbqT034nOTapXvTtAyU+8Ow=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"7720334a003c912fe41ae89caa194d7c13e26a23"</string>
+			<string>cdhash H"22d1d809ba93d37e273936a95ef4ed03253ef0ec"</string>
 		</dict>
 		<key>MacOS/__preview.dylib</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			Cv7DVoWTeM2AJST4fzGstSwShD0=
+			c3YO54j+oKJmlJVR64XAAAlFdv8=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"0afec356859378cd802524f87f31acb52c12843d"</string>
+			<string>cdhash H"73760ee788fea0a266949551eb85c000094576ff"</string>
 		</dict>
-		<key>PlugIns/APIKeyManager Extension.appex</key>
+		<key>PlugIns/Apivault Extension.appex</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			5Yf5OWtp7O3Hh17qxXcjsI9liK8=
+			pPVfbkeF51BAXYKJ58GfCauQeYY=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"e587f9396b69ecedc7875eeac57723b08f6588af"</string>
+			<string>cdhash H"a4f55f6e4785e750405d8289e7c19f09ab907986"</string>
 		</dict>
 		<key>Resources/AppIcon.icns</key>
 		<dict>
@@ -65,7 +65,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			whVqNiJK5ndh7QTRZbtTN13zrbSvyBx6CICDTBUhUUc=
+			X6zHMMmdM52AytxvnaABINKmfs70QBMYZ0VwGFrjNgo=
 			</data>
 		</dict>
 		<key>Resources/popup.css</key>
@@ -79,14 +79,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			TkNzZUzX5Hagd3m0r+hMk1/rGePPR8Gkh9o17ShYDv0=
+			WRnzIbq3B6p20XaLw6vqAPDSaY+UnoR5JhtZOL3meOY=
 			</data>
 		</dict>
 		<key>Resources/popup.js</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			RMWQXOljUnPHdRsh1DU2hSJW/4qxFz3VWokAKs0al0E=
+			9M8RL+w5U1888r2axm71LyvZKosLqgWh957Q8kwX9oo=
 			</data>
 		</dict>
 	</dict>

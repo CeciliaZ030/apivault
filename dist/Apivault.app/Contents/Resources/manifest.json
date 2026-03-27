@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "API Key Manager",
+  "name": "Apivault",
   "description": "Save API keys from Safari into your local dashboard.",
   "version": "0.1.0",
   "permissions": [
@@ -13,7 +13,7 @@
     "http://localhost:38173/*"
   ],
   "action": {
-    "default_title": "API Key Manager",
+    "default_title": "Apivault",
     "default_popup": "popup.html"
   }
 }

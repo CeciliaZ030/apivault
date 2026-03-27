@@ -1,4 +1,4 @@
-# API Key Manager
+# Apivault
 
 Local macOS dashboard plus Safari Web Extension for capturing, storing, and managing API keys from developer portals.
 
@@ -33,7 +33,7 @@ cd apivault
 `./install` will:
 - generate the Xcode project if needed
 - build the macOS app
-- copy `APIKeyManager.app` into `/Applications`
+- copy `Apivault.app` into `/Applications`
 - launch the installed app
 
 ## Manual Safari Step
@@ -42,7 +42,7 @@ Safari still requires one manual step after install:
 
 1. Open Safari.
 2. Go to `Safari > Settings > Extensions`.
-3. Enable `APIKeyManager Extension`.
+3. Enable `Apivault Extension`.
 4. If it does not appear immediately, quit and reopen Safari once.
 
 ## Manual Developer Build

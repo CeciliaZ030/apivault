@@ -6,23 +6,23 @@
 	<dict/>
 	<key>files2</key>
 	<dict>
-		<key>MacOS/APIKeyManager Extension.debug.dylib</key>
+		<key>MacOS/Apivault Extension.debug.dylib</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			q3Co9Q2nC9mibIhvcqNO4ODOJ+o=
+			EfCI2Hwd+fKHIuYxOmpDEHTgwf0=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"ab70a8f50da70bd9a26c886f72a34ee0e0ce27ea"</string>
+			<string>cdhash H"11f088d87c1df9f28722e6313a6a431074e0c1fd"</string>
 		</dict>
 		<key>MacOS/__preview.dylib</key>
 		<dict>
 			<key>cdhash</key>
 			<data>
-			tTWCpCmXaWpM49RrTH+opC74M38=
+			IRzCFQu2cQaXoCvY06iMFw9352k=
 			</data>
 			<key>requirement</key>
-			<string>cdhash H"b53582a42997696a4ce3d46b4c7fa8a42ef8337f"</string>
+			<string>cdhash H"211cc2150bb6710697a02bd8d3a88c170f77e769"</string>
 		</dict>
 	</dict>
 	<key>rules</key>

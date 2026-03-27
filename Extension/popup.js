@@ -92,7 +92,7 @@ async function initialize() {
   const host = extractHost(state.activeTab.url);
   state.activeTab.host = host;
 
-  refs.siteTitle.textContent = host || "API Key Manager";
+  refs.siteTitle.textContent = host || "Apivault";
   refs.siteSubtitle.textContent = state.activeTab.title || "Manual key and usage logger";
 
   state.activeTab.siteName = extractSiteName(state.activeTab.url);
@@ -127,7 +127,7 @@ async function initialize() {
   } catch (error) {
     populateUsagePlatformOptions([]);
     applyRestoredUsageSelection();
-    setStatus("Dashboard is not reachable. Open API Key Manager, then retry.", "error");
+    setStatus("Dashboard is not reachable. Open Apivault, then retry.", "error");
   }
 }
 
@@ -835,11 +835,11 @@ async function sendLocalhostBridge(message) {
     },
     body: JSON.stringify(message)
   }).catch(() => {
-    throw new Error("Dashboard is not reachable. Open API Key Manager, then retry.");
+    throw new Error("Dashboard is not reachable. Open Apivault, then retry.");
   });
 
   if (!response.ok) {
-    throw new Error("Dashboard is not reachable. Open API Key Manager, then retry.");
+    throw new Error("Dashboard is not reachable. Open Apivault, then retry.");
   }
 
   return response.json();

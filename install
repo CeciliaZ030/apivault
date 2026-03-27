@@ -6,8 +6,9 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_FILE="$ROOT_DIR/APIKeyManager.xcodeproj"
 PROJECT_SPEC="$ROOT_DIR/project.yml"
 DERIVED_DATA_DIR="$ROOT_DIR/.build/DerivedData"
-BUILD_APP_PATH="$DERIVED_DATA_DIR/Build/Products/Debug/APIKeyManager.app"
-INSTALL_APP_PATH="/Applications/APIKeyManager.app"
+BUILD_APP_PATH="$DERIVED_DATA_DIR/Build/Products/Debug/Apivault.app"
+INSTALL_APP_PATH="/Applications/Apivault.app"
+LEGACY_APP_PATH="/Applications/APIKeyManager.app"
 
 log() {
   printf '\n==> %s\n' "$1"
@@ -29,7 +30,7 @@ if [[ ! -d "$PROJECT_FILE" || "$PROJECT_SPEC" -nt "$PROJECT_FILE" ]]; then
   )
 fi
 
-log "Building APIKeyManager"
+log "Building Apivault"
 xcodebuild \
   -project "$PROJECT_FILE" \
   -scheme APIKeyManager \
@@ -42,24 +43,26 @@ xcodebuild \
 
 log "Installing into /Applications"
 if [[ -w "/Applications" ]]; then
+  rm -rf "$LEGACY_APP_PATH"
   rm -rf "$INSTALL_APP_PATH"
   ditto "$BUILD_APP_PATH" "$INSTALL_APP_PATH"
 else
+  sudo rm -rf "$LEGACY_APP_PATH"
   sudo rm -rf "$INSTALL_APP_PATH"
   sudo ditto "$BUILD_APP_PATH" "$INSTALL_APP_PATH"
 fi
 
-log "Launching APIKeyManager"
+log "Launching Apivault"
 open "$INSTALL_APP_PATH"
 
 cat <<'EOF'
 
-Installed: /Applications/APIKeyManager.app
+Installed: /Applications/Apivault.app
 
 Manual Safari step:
 1. Open Safari.
 2. Go to Safari > Settings > Extensions.
-3. Enable "APIKeyManager Extension".
+3. Enable "Apivault Extension".
 4. If it does not appear, quit and reopen Safari once.
 
 EOF

@@ -5,7 +5,7 @@ struct InstructionsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("API Key Manager")
+            Text("Apivault")
                 .font(.title2)
                 .fontWeight(.semibold)
 

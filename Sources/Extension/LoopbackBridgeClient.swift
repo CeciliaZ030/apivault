@@ -8,9 +8,9 @@ enum LoopbackBridgeClientError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .timeout:
-            return "API Key Manager did not respond in time. Launch the app and try again."
+            return "Apivault did not respond in time. Launch the app and try again."
         case .missingResponse:
-            return "API Key Manager returned an empty response."
+            return "Apivault returned an empty response."
         }
     }
 }
@@ -110,4 +110,3 @@ enum LoopbackBridgeClient {
         }
     }
 }
-
